@@ -1,55 +1,61 @@
-# Job Application Tracker: Definition of Done
+# Job Application Tracker: Definition of Done (revised)
 
-Working title. Date: 2026-10-07.
+Working title. Revised 2026-10-07 after the first manual tests. This replaces the earlier version.
 
-A free browser app that makes applying for jobs faster, and keeps track of what happened, with all data kept on the user's own device.
+A free browser app that makes applying for jobs faster, and keeps a reliable record of what you sent and said to each employer, with all data kept on the user's own device.
 
 ## Design rules
 
-1. **It must save time, not cost it.** Adding an application takes under 10 seconds. If a feature adds typing, it is cut.
-2. **No accounts, no server, no API keys.** Data never leaves the browser.
-3. **Respect the user.** Neutral wording, no red "rejected" counters, counts of what the user did this week.
+1. **It must save time, not cost it.** Adding a job takes under 10 seconds from a link or the bookmarklet. If a feature adds typing, it is cut.
+2. **Every application is a record.** It holds the link, the exact CV file that was sent, what was said to the employer, notes and dates, so the user can stand by what they told them.
+3. **No accounts, no server, no API keys.** Data never leaves the browser.
+4. **Respect the user.** Neutral wording, no red "rejected" counters, counts of what the user did this week. Nothing nags: the user decides what happens next.
 
 ## Version 1: what is in
 
-1. **Quick add.** Job link, company and role. The date fills itself and the last CV used is remembered.
-2. **To-apply list.** Paste several links at once, then mark each one "Applied" with one click.
-3. **Status list.** To apply, Applied, Interview, Offer, Closed (reason: no reply, declined, withdrawn).
-4. **Reminders that compute themselves.** "No reply after 14 days" appears on its own. The number of days is a setting.
-5. **CV tagging.** Each application records which CV was used. A small table shows replies and interviews per CV, with the counts shown.
-6. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.
-7. **One-click capture.** A bookmarklet that sends the page title and link from any job page to the tracker.
-8. **Backup.** Export and import as a JSON file, plus CSV export, and a reminder to back up.
-9. **Swedish and English** interface, responsive, keyboard accessible.
+1. **Link-first quick add.** Paste a link, optionally choose a CV from a dropdown, then "Add to apply list" or "Add as applied". Company and role are optional and editable. From a pasted link only the website name can be filled in.
+2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. No server, no AI.
+3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used is linked to the application and opens from its row.
+4. **Application record.** Link (opens from the row), CV file, "what I told them" message, notes, and dates.
+5. **Lists and statuses.** To apply and Applied, with Interview and Offer as statuses, and a collapsed Closed section (reason: no reply, not selected, declined offer, withdrawn). The layout (lists or columns) is decided from an approved mockup before it is built.
+6. **Reminders that compute themselves, and are optional.** "No reply after N days" can be switched on or off in settings, and N is a setting.
+7. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.
+8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead.
+9. **Backup.** Export and import as JSON including the CV files, plus CSV export. The app asks the browser to keep its storage, and reminds the user when a backup is overdue.
+10. **Swedish and English** interface, desktop-first, keyboard accessible. It must work on a phone but is not optimised for one.
 
-## Out of scope for version 1
+## Out of scope
 
 - Accounts, login, sync between devices
 - Any server, database or paid service
+- AI features, summarising pages, or reading other websites' content
 - Email or calendar integration
 - A browser extension (the bookmarklet covers capture)
-- AI features
 - Scraping or searching for jobs
-- Push notifications and a mobile app
+- Push notifications and a native mobile app
+- A polished phone layout (version 1.1)
 - Sharing with other people
 
 ## Data and tech choices
 
-- **Storage:** the browser (IndexedDB or localStorage). Nothing is sent anywhere, and a "delete all my data" button exists.
+- **Storage:** application data in the browser as now. CV files in IndexedDB behind the storage interface, as Blobs, with a size cap per file and in total. Nothing is sent anywhere, and a "delete all my data" button removes everything including files.
+- **Files:** PDF only, checked by type and by the file's first bytes. Files open from a local object URL.
+- **Backup with files:** one JSON file with the files encoded inside it, with a total size limit and a clear message when it is exceeded.
 - **Stack:** React, Vite and TypeScript, deployed as a static site on Cloudflare. No backend.
-- **Language files:** Swedish and English in two content files with the same keys, checked at build time.
-- **Logic kept in plain functions** (reminder dates, reply rates per CV, import and export), so it can be tested without a browser.
-- **Tests and CI:** unit tests for those functions, and a GitHub Action that runs tests and the build.
+- **Language files:** Swedish and English in two JSON files with the same keys, checked at build time.
+- **Logic in plain functions,** so it can be tested without a browser.
+- **Tests and CI:** unit tests for the logic, and a GitHub Action that runs tests and the build.
 
 ## Definition of done
 
 The project is finished when every line below is true.
 
-- [ ] A live address works on desktop and on a phone.
-- [ ] Adding an application takes under 10 seconds, timed with a real example.
-- [ ] All nine version 1 features work.
-- [ ] Export, clear all data, then import restores everything exactly.
-- [ ] Unit tests pass for reminders, reply rates per CV, and the import and export round trip, and the GitHub Action is green.
+- [ ] A live address works on desktop, and is usable on a phone.
+- [ ] Adding a job from a link or the bookmarklet takes under 10 seconds, timed with a real example.
+- [ ] A CV file can be uploaded, linked to an application, and opened again from its row after a reload.
+- [ ] All ten version 1 features work.
+- [ ] Export, clear all data, then import restores everything exactly, including the CV files.
+- [ ] Unit tests pass for reminders, statistics per CV, file validation, and the import and export round trip, and the GitHub Action is green.
 - [ ] Swedish and English are both complete, with no missing text.
 - [ ] The Network tab shows no data leaving the browser.
 - [ ] It works with the keyboard alone and has visible focus states.
@@ -58,19 +64,19 @@ The project is finished when every line below is true.
 
 ## Time box and what gets cut first
 
-About two weeks of part-time work. If it runs late, cut in this order and ship the rest:
+About four weeks of part-time work, from 2026-10-07. The decision date is the end of week four. If anything is unfinished then, cut in this order and ship the rest:
 
-1. CSV export
-2. The bookmarklet
-3. Reply rates per CV (keep the CV tag itself)
-4. Installable offline mode, if it was added at all
+1. The columns view (keep the lists)
+2. CSV export
+3. Message templates
+4. Statistics per CV
+5. The structured-data part of the bookmarklet (keep link and title)
 
-Quick add, the status list, reminders, templates, backup and the live address are never cut.
+Never cut: link-first quick add, CV files, the application record, the lists and statuses, backup including files, and the live address.
 
 ## Open questions
 
 - [ ] What name does the app get?
-- [ ] Is a plain list enough for statuses, or does the pipeline need columns?
+- [ ] Lists or columns? Decide from a mockup before building the final layout.
+- [ ] Size limits for CV files (per file and in total).
 - [ ] Does Arbetsförmedlingen or an a-kassa require a specific format for reporting job-search activity?
-- [ ] Which two or three CV versions will be tagged first?
-- [ ] How many days should the default reminder wait: 7, 14 or 21?
