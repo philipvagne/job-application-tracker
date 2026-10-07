@@ -338,3 +338,27 @@ describe('importData rejects bad input without throwing', () => {
     expect(r.ok && r.state.applications[1]?.notes).toContain('<b>x</b>')
   })
 })
+
+describe('settings.lastExportAt', () => {
+  const withLast: AppState = {
+    ...state,
+    settings: { ...state.settings, lastExportAt: '2026-10-05T10:00:00.000Z' },
+  }
+
+  it('round-trips when present', () => {
+    const result = importData(JSON.parse(JSON.stringify(exportData(withLast))))
+    expect(result).toEqual({ ok: true, state: withLast })
+  })
+
+  it('is omitted from the export when absent, and old files without it still import', () => {
+    const file = valid()
+    expect(Object.keys(file['settings'] as object)).not.toContain('lastExportAt')
+    expect(importData(file)).toEqual({ ok: true, state })
+  })
+
+  it.each([['yesterday'], [123], [null], ['2026-10-05']])('rejects %j', (bad) => {
+    const file = valid()
+    ;(file['settings'] as Record<string, unknown>)['lastExportAt'] = bad
+    expect(errorsOf(file)).toEqual([{ code: 'invalid_date', path: 'settings.lastExportAt' }])
+  })
+})

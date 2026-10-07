@@ -32,6 +32,7 @@ export type ImportErrorCode =
   | 'unknown_cv'
   | 'closed_reason_mismatch'
   | 'out_of_range'
+  | 'too_large'
 
 export type ImportErrorParams = Record<string, string | number | string[]>
 
@@ -77,11 +78,21 @@ export function exportData(state: AppState): ExportFile {
     version: EXPORT_VERSION,
     applications: state.applications.map(copyApplication),
     cvs: state.cvs.map((cv) => ({ id: cv.id, name: cv.name })),
-    settings: { reminderDays: state.settings.reminderDays, language: state.settings.language },
+    settings: copySettings(state.settings),
   }
 }
 
+function copySettings(s: Settings): Settings {
+  const copy: Settings = { reminderDays: s.reminderDays, language: s.language }
+  if (s.lastExportAt !== undefined) copy.lastExportAt = s.lastExportAt
+  return copy
+}
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === 'string' && ISO_DATE.test(value) && !Number.isNaN(Date.parse(value))
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -178,7 +189,7 @@ function validateApplications(
         if (required) errors.push(error('missing_field', `${path}.${field}`))
         return undefined
       }
-      if (typeof v !== 'string' || !ISO_DATE.test(v) || Number.isNaN(Date.parse(v))) {
+      if (!isIsoDate(v)) {
         errors.push(error('invalid_date', `${path}.${field}`))
         return undefined
       }
@@ -272,7 +283,7 @@ function validateSettings(raw: unknown, errors: ImportError[]): Settings | null 
     return null
   }
   const before = errors.length
-  const { reminderDays, language } = raw
+  const { reminderDays, language, lastExportAt } = raw
 
   if (reminderDays === undefined) {
     errors.push(error('missing_field', 'settings.reminderDays'))
@@ -292,8 +303,14 @@ function validateSettings(raw: unknown, errors: ImportError[]): Settings | null 
     errors.push(error('invalid_value', 'settings.language', { allowed: [...LANGUAGES] }))
   }
 
+  if (lastExportAt !== undefined && !isIsoDate(lastExportAt)) {
+    errors.push(error('invalid_date', 'settings.lastExportAt'))
+  }
+
   if (errors.length > before) return null
-  return { reminderDays: reminderDays as number, language: language as Language }
+  const settings: Settings = { reminderDays: reminderDays as number, language: language as Language }
+  if (typeof lastExportAt === 'string') settings.lastExportAt = lastExportAt
+  return settings
 }
 
 /**
