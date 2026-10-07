@@ -192,6 +192,23 @@
   margin-top: var(--space-4);
 }
 
+/*
+ * Confirm dialogs: a secondary button at the left of the footer, and the two main buttons
+ * together at the right. If the row is too narrow, the left button wraps onto its own line above.
+ */
+.dialog__actions-start {
+  flex: 0 0 auto;
+  margin-inline-end: auto;
+  align-self: center;
+}
+
+.dialog__actions-main {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
 .section {
   padding-block: var(--space-4);
   border-top: 1px solid var(--border);
@@ -273,6 +290,10 @@
 
   .dialog__actions .btn {
     flex: 1 1 auto;
+  }
+
+  .dialog__actions .dialog__actions-start {
+    flex: 0 0 auto;
   }
 }
 

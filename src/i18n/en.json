@@ -76,7 +76,8 @@
     }
   },
   "confirm": {
-    "exportFirst": "Export your current data first",
+    "exportFirst": "Export first: download a backup of your current data",
+    "exportFirstShort": "Export first",
     "exportDone": "Backup exported.",
     "replace": {
       "title": "Replace your current data?",
@@ -150,8 +151,8 @@
     "no_reply": "No reply",
     "not_selected": "Not selected",
     "declined_offer": "Declined offer",
-    "withdrawn": "Withdrawn",
-    "declined": "Declined (older entry)"
+    "declined": "Declined (older entry)",
+    "withdrawn": "Withdrawn (older entry)"
   },
   "row": {
     "actionFor": "{action}: {company}",

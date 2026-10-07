@@ -76,7 +76,8 @@
     }
   },
   "confirm": {
-    "exportFirst": "Exportera dina nuvarande uppgifter först",
+    "exportFirst": "Exportera först: ladda ner en säkerhetskopia av dina nuvarande uppgifter",
+    "exportFirstShort": "Exportera först",
     "exportDone": "Säkerhetskopian är exporterad.",
     "replace": {
       "title": "Ersätta dina nuvarande uppgifter?",
@@ -150,8 +151,8 @@
     "no_reply": "Inget svar",
     "not_selected": "Avslag",
     "declined_offer": "Tackade nej till erbjudandet",
-    "withdrawn": "Återkallad",
-    "declined": "Tackat nej (äldre val)"
+    "declined": "Tackat nej (äldre val)",
+    "withdrawn": "Återkallad (äldre val)"
   },
   "row": {
     "actionFor": "{action}: {company}",

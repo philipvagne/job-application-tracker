@@ -8,7 +8,7 @@ import {
   reopenTarget,
   updateApplication,
 } from './application'
-import { STATUSES, type Application, type Status } from './types'
+import { CLOSED_REASONS, SELECTABLE_CLOSED_REASONS, STATUSES, type Application, type Status } from './types'
 
 const T0 = '2026-10-01T08:00:00.000Z'
 const T1 = '2026-10-05T08:00:00.000Z'
@@ -349,7 +349,7 @@ describe('changeStatus and the CV', () => {
   })
 
   it('does not need a CV to close, to step back to to_apply, or to reopen to to_apply', () => {
-    expect(changeStatus(noCv(), 'closed', T1, 'withdrawn').ok).toBe(true)
+    expect(changeStatus(noCv(), 'closed', T1, 'no_reply').ok).toBe(true)
     expect(changeStatus(noCv({ status: 'closed', closedReason: 'withdrawn' }), 'to_apply', T1).ok).toBe(true)
   })
 
@@ -368,6 +368,20 @@ describe('changeStatus and the CV', () => {
     const app = noCv()
     changeStatus(app, 'interview', T1)
     expect(app).toEqual(noCv())
+  })
+})
+
+describe('closed reasons', () => {
+  it('offers no legacy reason, and only reasons that are valid', () => {
+    expect(SELECTABLE_CLOSED_REASONS).not.toContain('declined')
+    expect(SELECTABLE_CLOSED_REASONS).not.toContain('withdrawn')
+    for (const reason of SELECTABLE_CLOSED_REASONS) expect(CLOSED_REASONS).toContain(reason)
+  })
+
+  it('still closes with and reopens from a legacy reason', () => {
+    const closed = changeStatus(make({ status: 'applied', appliedAt: T0 }), 'closed', T1, 'withdrawn')
+    expect(closed.ok && closed.value.closedReason).toBe('withdrawn')
+    expect(closed.ok && changeStatus(closed.value, 'applied', T2).ok).toBe(true)
   })
 })
 

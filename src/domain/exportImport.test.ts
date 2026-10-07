@@ -188,7 +188,7 @@ describe('importData rejects bad input without throwing', () => {
       {
         code: 'invalid_value',
         path: 'applications[1].closedReason',
-        params: { allowed: ['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'] },
+        params: { allowed: ['no_reply', 'not_selected', 'declined_offer', 'declined', 'withdrawn'] },
       },
     ])
     expect(errorsOf(mutateApp((a) => (a['notes'] = 3)))[0]).toEqual({
@@ -207,8 +207,8 @@ describe('importData rejects bad input without throwing', () => {
     ])
   })
 
-  it.each(['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'])(
-    'accepts the closed reason %s (declined is the older, ambiguous one and is kept as it is)',
+  it.each(['no_reply', 'not_selected', 'declined_offer', 'declined', 'withdrawn'])(
+    'accepts the closed reason %s (declined and withdrawn are older reasons and are kept as they are)',
     (reason) => {
       const r = importData(mutateApp((a) => (a['closedReason'] = reason)))
       expect(r.ok && r.state.applications[1]?.closedReason).toBe(reason)

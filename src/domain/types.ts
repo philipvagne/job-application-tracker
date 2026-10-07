@@ -2,14 +2,15 @@ export const STATUSES = ['to_apply', 'applied', 'interview', 'offer', 'closed'] 
 export type Status = (typeof STATUSES)[number]
 
 /**
- * `declined` is the older, ambiguous reason (it never said who said no). It is still read
- * and shown, but no longer offered: see SELECTABLE_CLOSED_REASONS.
+ * `declined` (the older, ambiguous one: it never said who said no) and `withdrawn` are
+ * legacy reasons. They are still read and shown, but no longer offered: see
+ * SELECTABLE_CLOSED_REASONS.
  */
-export const CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'] as const
+export const CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer', 'declined', 'withdrawn'] as const
 export type ClosedReason = (typeof CLOSED_REASONS)[number]
 
 /** The reasons a user can pick when closing an application. */
-export const SELECTABLE_CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer', 'withdrawn'] as const
+export const SELECTABLE_CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer'] as const
 
 /** The stages an application can be closed from. */
 export const CLOSED_FROM = ['to_apply', 'applied', 'interview', 'offer'] as const

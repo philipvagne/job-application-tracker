@@ -41,28 +41,29 @@ export function ConfirmDialog({
       </h2>
       <p>{body}</p>
       {children}
-      <p>
+      <p role="status" className="note">
+        {exported ? t('confirm.exportDone') : ''}
+      </p>
+      <div className="dialog__actions">
         <button
           type="button"
-          className="btn btn--small"
+          className="btn btn--small dialog__actions-start"
+          aria-label={t('confirm.exportFirst')}
           onClick={() => {
             actions.exportBackup()
             setExported(true)
           }}
         >
-          {t('confirm.exportFirst')}
+          {t('confirm.exportFirstShort')}
         </button>
-      </p>
-      <p role="status" className="note">
-        {exported ? t('confirm.exportDone') : ''}
-      </p>
-      <div className="dialog__actions">
-        <button type="button" className="btn" data-autofocus onClick={onCancel}>
-          {t('common.cancel')}
-        </button>
-        <button type="button" className={danger ? 'btn btn--danger' : 'btn btn--primary'} onClick={onConfirm}>
-          {confirmLabel}
-        </button>
+        <div className="dialog__actions-main">
+          <button type="button" className="btn" data-autofocus onClick={onCancel}>
+            {t('common.cancel')}
+          </button>
+          <button type="button" className={danger ? 'btn btn--danger' : 'btn btn--primary'} onClick={onConfirm}>
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </Dialog>
   )
