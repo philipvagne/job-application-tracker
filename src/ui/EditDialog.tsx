@@ -35,8 +35,6 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
   const roleId = useId()
   const linkId = useId()
   const notesId = useId()
-  const toldId = useId()
-  const toldHintId = useId()
   const cvSelectId = useId()
   const cvStatusId = useId()
   const companyErrorId = useId()
@@ -46,7 +44,6 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
   const [role, setRole] = useState(application.role)
   const [link, setLink] = useState(application.url)
   const [notes, setNotes] = useState(application.notes ?? '')
-  const [toldThem, setToldThem] = useState(application.toldThem ?? '')
   const [cvId, setCvId] = useState(application.cvId ?? '')
   const [errors, setErrors] = useState<ApplicationFieldError[]>([])
 
@@ -65,7 +62,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
 
   function onSubmit(event: FormEvent): void {
     event.preventDefault()
-    const result = actions.editApplication(application.id, { company, role, url: link, notes, toldThem })
+    const result = actions.editApplication(application.id, { company, role, url: link, notes })
     if (!result.ok) {
       setErrors(result.error)
       return
@@ -144,20 +141,6 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
         </select>
         <p id={cvStatusId} className="hint">
           {cvStatusText}
-        </p>
-      </div>
-      <div className="field">
-        <label htmlFor={toldId}>{t('field.toldThem')}</label>
-        <textarea
-          id={toldId}
-          className="input input--area"
-          rows={4}
-          value={toldThem}
-          onChange={(e) => setToldThem(e.target.value)}
-          aria-describedby={toldHintId}
-        />
-        <p id={toldHintId} className="hint">
-          {t('field.toldThemHint')}
         </p>
       </div>
       <div className="field">

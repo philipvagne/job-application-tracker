@@ -44,7 +44,7 @@ export function ConfirmDialog({
       <p>
         <button
           type="button"
-          className="btn"
+          className="btn btn--small"
           onClick={() => {
             actions.exportBackup()
             setExported(true)

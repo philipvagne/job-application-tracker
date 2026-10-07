@@ -1,9 +1,11 @@
 import {
+  CLOSED_FROM,
   CLOSED_REASONS,
   LANGUAGES,
   STATUSES,
   type AppState,
   type Application,
+  type ClosedFrom,
   type ClosedReason,
   type Cv,
   type CvFile,
@@ -72,7 +74,7 @@ function copyApplication(a: Application): Application {
   if (a.interviewAt !== undefined) copy.interviewAt = a.interviewAt
   if (a.offerAt !== undefined) copy.offerAt = a.offerAt
   if (a.notes !== undefined) copy.notes = a.notes
-  if (a.toldThem !== undefined) copy.toldThem = a.toldThem
+  if (a.closedFrom !== undefined) copy.closedFrom = a.closedFrom
   return copy
 }
 
@@ -320,9 +322,15 @@ function validateApplications(
     if (notes !== undefined && typeof notes !== 'string') {
       errors.push(wrongType(`${path}.notes`, 'string', notes))
     }
-    const toldThem = item['toldThem']
-    if (toldThem !== undefined && typeof toldThem !== 'string') {
-      errors.push(wrongType(`${path}.toldThem`, 'string', toldThem))
+    // An old file's "toldThem" is not read: unknown fields are dropped.
+
+    const closedFrom = item['closedFrom']
+    if (closedFrom !== undefined) {
+      if (!isOneOf(CLOSED_FROM, closedFrom)) {
+        errors.push(error('invalid_value', `${path}.closedFrom`, { allowed: [...CLOSED_FROM] }))
+      } else if (validStatus !== undefined && validStatus !== 'closed') {
+        errors.push(error('closed_reason_mismatch', `${path}.closedFrom`, { status: validStatus }))
+      }
     }
 
     if (errors.length === before && validStatus !== undefined && createdAt !== undefined) {
@@ -341,7 +349,7 @@ function validateApplications(
       if (interviewAt !== undefined) app.interviewAt = interviewAt
       if (offerAt !== undefined) app.offerAt = offerAt
       if (typeof notes === 'string') app.notes = notes
-      if (typeof toldThem === 'string') app.toldThem = toldThem
+      if (closedFrom !== undefined) app.closedFrom = closedFrom as ClosedFrom
       applications.push(app)
     }
   })

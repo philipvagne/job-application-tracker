@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { daysSince } from './dates'
 import { getReminders } from './reminders'
 import type { Application } from './types'
 
@@ -27,9 +28,30 @@ describe('getReminders', () => {
     expect(getReminders([app('a')], NOW, 14).map((a) => a.id)).toEqual(['a'])
   })
 
-  it('excludes an application one millisecond short of the boundary', () => {
-    const almost = app('a', { appliedAt: '2026-10-01T12:00:00.001Z' })
-    expect(getReminders([almost], NOW, 14)).toEqual([])
+  it('counts local calendar days, so an application sent late the day before is 1 day old', () => {
+    // 23:00 on 14 Oct and 00:30 on 15 Oct, Stockholm time: 90 minutes apart, one calendar day.
+    const sent = app('a', { appliedAt: '2026-10-14T21:00:00.000Z' })
+    const now = '2026-10-14T22:30:00.000Z'
+    expect(getReminders([sent], now, 1).map((a) => a.id)).toEqual(['a'])
+    expect(getReminders([sent], now, 2)).toEqual([])
+  })
+
+  it('excludes an application one calendar day short of the boundary', () => {
+    expect(getReminders([app('a', { appliedAt: '2026-10-02T00:00:00.000Z' })], NOW, 14)).toEqual([])
+  })
+
+  it('agrees with the day count the application row shows', () => {
+    const pairs: [string, string][] = [
+      ['2026-10-14T21:00:00.000Z', '2026-10-14T22:30:00.000Z'],
+      ['2026-10-12T07:00:00.000Z', '2026-10-14T06:00:00.000Z'],
+      ['2026-10-24T10:00:00.000Z', '2026-10-26T10:00:00.000Z'],
+    ]
+    for (const [appliedAt, now] of pairs) {
+      const days = daysSince(appliedAt, now) ?? Number.NaN
+      const sent = app('a', { appliedAt })
+      expect(getReminders([sent], now, days)).toHaveLength(1)
+      expect(getReminders([sent], now, days + 1)).toHaveLength(0)
+    }
   })
 
   it('includes older applications and excludes newer ones', () => {

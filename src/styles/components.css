@@ -327,6 +327,13 @@
   font-weight: 600;
 }
 
+/* Looks like a link, because it opens something. */
+.paste__summary {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .week {
   margin: var(--space-3) 0 var(--space-4);
   color: var(--text-muted);

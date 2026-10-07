@@ -95,9 +95,7 @@
     "link": "Länk",
     "notes": "Anteckningar",
     "companyRequired": "Ange ett företagsnamn.",
-    "linkInvalid": "Ange en länk som börjar med http:// eller https://.",
-    "toldThem": "Det jag sa till dem",
-    "toldThemHint": "Det du skrev eller sa till arbetsgivaren, med egna ord."
+    "linkInvalid": "Ange en länk som börjar med http:// eller https://."
   },
   "quickAdd": {
     "title": "Lägg till ett jobb",
@@ -135,7 +133,7 @@
       "empty": "Inget väntar. Lägg till ett jobb ovan."
     },
     "applied": {
-      "title": "Sökta",
+      "title": "Sökta jobb",
       "empty": "Ansökningar du markerar som sökta visas här."
     },
     "closed": {
@@ -150,12 +148,14 @@
   },
   "closedReason": {
     "no_reply": "Inget svar",
-    "declined": "Tackat nej",
-    "withdrawn": "Återkallad"
+    "not_selected": "Avslag",
+    "declined_offer": "Tackade nej till erbjudandet",
+    "withdrawn": "Återkallad",
+    "declined": "Tackat nej (äldre val)"
   },
   "row": {
     "actionFor": "{action}: {company}",
-    "markApplied": "Sökt",
+    "markApplied": "Markera som sökt",
     "appliedWhen": "Sökt {when}",
     "cvName": "CV: {name}",
     "linkOpens": "{host} (öppnas i en ny flik)",
@@ -240,7 +240,7 @@
       "fileName": "filnamn",
       "size": "storlek",
       "type": "typ",
-      "toldThem": "det jag sa"
+      "closedFrom": "avslutad från"
     }
   },
   "importErrors": {
@@ -271,6 +271,7 @@
       "too_large": "Filen är större än {max} MB.",
       "name_too_long": "Filnamnet är för långt (mer än {max} tecken).",
       "not_pdf": "Bara PDF-filer kan läggas till. Välj en fil som slutar på .pdf.",
+      "not_pdf_content": "Filen heter .pdf men innehållet är ingen PDF. Välj en annan fil.",
       "unreadable": "Filen gick inte att läsa. Försök välja den igen.",
       "save_failed": "CV:t kunde inte sparas, så inget lades till. Exportera en säkerhetskopia av dina uppgifter och försök igen.",
       "quota": "Webbläsarens lagringsutrymme är fullt, så filen lades inte till.",

@@ -1,8 +1,19 @@
 export const STATUSES = ['to_apply', 'applied', 'interview', 'offer', 'closed'] as const
 export type Status = (typeof STATUSES)[number]
 
-export const CLOSED_REASONS = ['no_reply', 'declined', 'withdrawn'] as const
+/**
+ * `declined` is the older, ambiguous reason (it never said who said no). It is still read
+ * and shown, but no longer offered: see SELECTABLE_CLOSED_REASONS.
+ */
+export const CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'] as const
 export type ClosedReason = (typeof CLOSED_REASONS)[number]
+
+/** The reasons a user can pick when closing an application. */
+export const SELECTABLE_CLOSED_REASONS = ['no_reply', 'not_selected', 'declined_offer', 'withdrawn'] as const
+
+/** The stages an application can be closed from. */
+export const CLOSED_FROM = ['to_apply', 'applied', 'interview', 'offer'] as const
+export type ClosedFrom = (typeof CLOSED_FROM)[number]
 
 export const LANGUAGES = ['sv', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
@@ -27,8 +38,8 @@ export interface Application {
   /** First time the application reached offer. Never cleared. */
   offerAt?: IsoDate
   notes?: string
-  /** What the user told the employer, as free text. */
-  toldThem?: string
+  /** The stage the application was at when it was closed. Only present while closed. */
+  closedFrom?: ClosedFrom
 }
 
 /** Details of the PDF stored for a CV entry. The file itself lives in IndexedDB under the CV's id. */

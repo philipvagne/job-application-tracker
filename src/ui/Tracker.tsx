@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import {
-  CLOSED_REASONS,
   MAX_CV_FILE_BYTES,
   MAX_FILE_NAME_LENGTH,
+  SELECTABLE_CLOSED_REASONS,
   applicationsThisWeek,
+  reopenTarget,
   suggestCvName,
   type Application,
   type ClosedReason,
@@ -266,12 +267,12 @@ export function Tracker() {
   }
 
   function onReopen(application: Application): void {
-    const to: Status = application.appliedAt !== undefined ? 'applied' : 'to_apply'
+    const to: Status = reopenTarget(application)
     const next = neighbourIds(closed, application, (a) => `reopen-${a.id}`)
     const result = actions.changeStatus(application.id, to)
     if (!result.ok) return
     setMessage(t('announce.reopened', { company: application.company }))
-    setFocusIds([to === 'applied' ? `more-${application.id}` : `apply-${application.id}`, ...next])
+    setFocusIds([to === 'to_apply' ? `apply-${application.id}` : `more-${application.id}`, ...next])
   }
 
   const weekText = t(new Intl.PluralRules(language).select(weekCount) === 'one' ? 'tracker.week.one' : 'tracker.week.other', {
@@ -479,9 +480,11 @@ export function Tracker() {
               id={reasonId}
               className="input input--select"
               value={closeReason}
-              onChange={(e) => setCloseReason(CLOSED_REASONS.find((r) => r === e.target.value) ?? 'no_reply')}
+              onChange={(e) =>
+                setCloseReason(SELECTABLE_CLOSED_REASONS.find((r) => r === e.target.value) ?? 'no_reply')
+              }
             >
-              {CLOSED_REASONS.map((reason) => (
+              {SELECTABLE_CLOSED_REASONS.map((reason) => (
                 <option key={reason} value={reason}>
                   {t(`closedReason.${reason}`)}
                 </option>

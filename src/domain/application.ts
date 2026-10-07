@@ -24,7 +24,6 @@ export interface ApplicationChanges {
   role?: string
   url?: string
   notes?: string
-  toldThem?: string
 }
 
 /** Trims the text fields and returns what is wrong with them. Role may be empty; so may the link. */
@@ -67,7 +66,7 @@ export function newApplication(
 /**
  * Edits company, role, link and notes. Company must not be empty after trimming, and a
  * link, if there is one, must be http or https. Fields left out stay as they are; empty
- * notes and an empty "what I told them" are removed.
+ * notes are removed.
  */
 export function updateApplication(
   application: Application,
@@ -79,12 +78,10 @@ export function updateApplication(
   const errors = validateApplicationFields({ company, url })
   if (errors.length > 0) return { ok: false, error: errors }
 
-  const { notes: _notes, toldThem: _toldThem, ...rest } = application
+  const { notes: _notes, ...rest } = application
   const next: Application = { ...rest, company, role, url }
   const notes = changes.notes ?? application.notes
   if (notes !== undefined && notes.trim() !== '') next.notes = notes
-  const toldThem = changes.toldThem ?? application.toldThem
-  if (toldThem !== undefined && toldThem.trim() !== '') next.toldThem = toldThem
   return { ok: true, value: next }
 }
 
@@ -117,8 +114,20 @@ const ALLOWED: Record<Status, readonly Status[]> = {
 }
 
 function withoutClosedReason(application: Application): Application {
-  const { closedReason: _removed, ...rest } = application
+  const { closedReason: _removed, closedFrom: _from, ...rest } = application
   return rest
+}
+
+/**
+ * The status a closed application returns to: the stage it was closed from, if that is
+ * known and fits its dates; otherwise applied when it has appliedAt, else to_apply.
+ */
+export function reopenTarget(application: Application): Status {
+  const fallback: Status = application.appliedAt !== undefined ? 'applied' : 'to_apply'
+  const from = application.closedFrom
+  if (from === undefined) return fallback
+  if (from === 'to_apply') return application.appliedAt === undefined ? 'to_apply' : fallback
+  return application.appliedAt === undefined ? fallback : from
 }
 
 function withoutApplied(application: Application): Application {
@@ -132,9 +141,11 @@ function withoutApplied(application: Application): Application {
  *   interview and applied may jump to offer.
  * - Back one stage: offer -> interview, interview -> applied, applied -> to_apply.
  *   Stepping back to to_apply clears appliedAt and repliedAt; cvId stays.
- * - Closing is allowed from any non-closed status and needs a closedReason.
- * - Reopening a closed application goes to applied if it has appliedAt, otherwise
- *   to to_apply, and clears closedReason.
+ * - Closing is allowed from any non-closed status and needs a closedReason. It records
+ *   the stage in closedFrom.
+ * - Reopening a closed application goes back to closedFrom (see reopenTarget), which for
+ *   older data without it is applied if it has appliedAt, otherwise to_apply. It clears
+ *   closedReason and closedFrom.
  * - Reaching applied, interview or offer fills appliedAt if missing. Reaching
  *   interview or offer also fills repliedAt and interviewAt if missing, and offer
  *   fills offerAt. interviewAt and offerAt are never cleared.
@@ -160,11 +171,12 @@ export function changeStatus(
 
   if (to === 'closed') {
     if (closedReason === undefined) return { ok: false, error: 'closed_reason_required' }
-    return { ok: true, value: { ...application, status: 'closed', closedReason } }
+    if (from === 'closed') return { ok: false, error: 'same_status' }
+    return { ok: true, value: { ...application, status: 'closed', closedReason, closedFrom: from } }
   }
 
   if (from === 'closed') {
-    const reopenTo: Status = application.appliedAt !== undefined ? 'applied' : 'to_apply'
+    const reopenTo = reopenTarget(application)
     if (to !== reopenTo) return { ok: false, error: 'invalid_transition' }
     return withCv({ ...withoutClosedReason(application), status: reopenTo })
   }

@@ -67,8 +67,12 @@ describe('validateCvFile', () => {
   })
 
   it('rejects a .pdf name whose content is not a PDF', () => {
-    expect(validateCvFile(ok, enc('<html>hello</html>'))).toEqual({ ok: false, error: 'not_pdf' })
-    expect(validateCvFile(ok, new Uint8Array())).toEqual({ ok: false, error: 'not_pdf' })
+    expect(validateCvFile(ok, enc('<html>hello</html>'))).toEqual({ ok: false, error: 'not_pdf_content' })
+    expect(validateCvFile(ok, new Uint8Array())).toEqual({ ok: false, error: 'not_pdf_content' })
+  })
+
+  it('reports the name first when both the name and the content are wrong', () => {
+    expect(validateCvFile({ name: 'cv.txt', size: 10 }, enc('<html>'))).toEqual({ ok: false, error: 'not_pdf' })
   })
 
   it('accepts a name of 255 characters and rejects 256', () => {

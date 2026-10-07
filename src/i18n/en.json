@@ -95,9 +95,7 @@
     "link": "Link",
     "notes": "Notes",
     "companyRequired": "Enter a company name.",
-    "linkInvalid": "Enter a link that starts with http:// or https://.",
-    "toldThem": "What I told them",
-    "toldThemHint": "What you wrote or said to the employer, in your own words."
+    "linkInvalid": "Enter a link that starts with http:// or https://."
   },
   "quickAdd": {
     "title": "Add a job",
@@ -135,7 +133,7 @@
       "empty": "Nothing waiting. Add a job above."
     },
     "applied": {
-      "title": "Applied",
+      "title": "Applied jobs",
       "empty": "Applications you mark as applied will show up here."
     },
     "closed": {
@@ -150,12 +148,14 @@
   },
   "closedReason": {
     "no_reply": "No reply",
-    "declined": "Declined",
-    "withdrawn": "Withdrawn"
+    "not_selected": "Not selected",
+    "declined_offer": "Declined offer",
+    "withdrawn": "Withdrawn",
+    "declined": "Declined (older entry)"
   },
   "row": {
     "actionFor": "{action}: {company}",
-    "markApplied": "Applied",
+    "markApplied": "Mark as applied",
     "appliedWhen": "Applied {when}",
     "cvName": "CV: {name}",
     "linkOpens": "{host} (opens in a new tab)",
@@ -240,7 +240,7 @@
       "fileName": "file name",
       "size": "size",
       "type": "type",
-      "toldThem": "what I told them"
+      "closedFrom": "closed from"
     }
   },
   "importErrors": {
@@ -271,6 +271,7 @@
       "too_large": "That file is larger than {max} MB.",
       "name_too_long": "That file name is too long (more than {max} characters).",
       "not_pdf": "Only PDF files can be added. Choose a file that ends in .pdf.",
+      "not_pdf_content": "This file is named .pdf, but its content isn't a PDF. Choose a different file.",
       "unreadable": "The file couldn't be read. Try choosing it again.",
       "save_failed": "The CV couldn't be saved, so nothing was added. Export a backup of your data and try again.",
       "quota": "This browser's storage is full, so the file wasn't added.",

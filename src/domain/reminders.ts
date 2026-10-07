@@ -1,12 +1,11 @@
+import { daysSince } from './dates'
 import type { Application, IsoDate } from './types'
-
-const DAY_MS = 86_400_000
 
 /**
  * "No reply after N days" means: the application has status applied, has no
- * repliedAt, and Math.floor((now - appliedAt) / 86400000) >= reminderDays.
- * So an application applied exactly reminderDays x 24 hours ago is included,
- * and one that is a millisecond short of that is not.
+ * repliedAt, and daysSince(appliedAt, now) >= reminderDays. Days are local calendar
+ * days, the same count the application row shows, so an application sent late yesterday
+ * is 1 day old this morning.
  * Oldest applications come first. Unparseable dates are skipped.
  */
 export function getReminders(
@@ -14,17 +13,15 @@ export function getReminders(
   now: IsoDate,
   reminderDays: number,
 ): Application[] {
-  const nowMs = Date.parse(now)
-  if (Number.isNaN(nowMs) || Number.isNaN(reminderDays)) return []
+  if (Number.isNaN(Date.parse(now)) || Number.isNaN(reminderDays)) return []
 
   return applications
     .filter((a) => {
       if (a.status !== 'applied' || a.appliedAt === undefined || a.repliedAt !== undefined) {
         return false
       }
-      const appliedMs = Date.parse(a.appliedAt)
-      if (Number.isNaN(appliedMs)) return false
-      return Math.floor((nowMs - appliedMs) / DAY_MS) >= reminderDays
+      const days = daysSince(a.appliedAt, now)
+      return days !== null && days >= reminderDays
     })
     .sort((a, b) => Date.parse(a.appliedAt ?? '') - Date.parse(b.appliedAt ?? ''))
 }

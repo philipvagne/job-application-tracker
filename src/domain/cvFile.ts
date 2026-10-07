@@ -5,7 +5,7 @@ export const MAX_FILE_NAME_LENGTH = 255
 /** How many bytes from the start of the file are searched for the PDF signature. */
 export const PDF_HEADER_BYTES = 1024
 
-export type CvFileError = 'empty' | 'too_large' | 'name_too_long' | 'not_pdf'
+export type CvFileError = 'empty' | 'too_large' | 'name_too_long' | 'not_pdf' | 'not_pdf_content'
 
 export interface CvFileCandidate {
   name: string
@@ -24,8 +24,8 @@ export function hasPdfSignature(head: Uint8Array): boolean {
 }
 
 /**
- * Checks a file the user picked: not empty, at most 5 MB, a name that ends in .pdf, and a
- * PDF signature at the start. The browser's own idea of the type is not used, because it is
+ * Checks a file the user picked: not empty, at most 5 MB, a name that ends in .pdf (else
+ * not_pdf), and a PDF signature at the start (else not_pdf_content). The browser's own idea of the type is not used, because it is
  * often empty. Nothing checks that the rest of the PDF is well formed or safe.
  */
 export function validateCvFile(file: CvFileCandidate, head: Uint8Array): Result<CvFile, CvFileError> {
@@ -33,7 +33,8 @@ export function validateCvFile(file: CvFileCandidate, head: Uint8Array): Result<
   if (file.size > MAX_CV_FILE_BYTES) return { ok: false, error: 'too_large' }
   const fileName = file.name
   if (fileName.length > MAX_FILE_NAME_LENGTH) return { ok: false, error: 'name_too_long' }
-  if (!/\.pdf$/i.test(fileName) || !hasPdfSignature(head)) return { ok: false, error: 'not_pdf' }
+  if (!/\.pdf$/i.test(fileName)) return { ok: false, error: 'not_pdf' }
+  if (!hasPdfSignature(head)) return { ok: false, error: 'not_pdf_content' }
   return { ok: true, value: { fileName, size: file.size, type: 'application/pdf' } }
 }
 

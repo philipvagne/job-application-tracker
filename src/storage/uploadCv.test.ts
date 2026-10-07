@@ -93,7 +93,7 @@ describe('uploadCv', () => {
     const cases: [string, PickedFile, string][] = [
       ['empty', pdf('a.pdf', ''), 'empty'],
       ['wrong extension', pdf('a.txt'), 'not_pdf'],
-      ['not a PDF inside', pdf('a.pdf', '<html>'), 'not_pdf'],
+      ['not a PDF inside', pdf('a.pdf', '<html>'), 'not_pdf_content'],
       ['too large', Object.assign(new Blob([new Uint8Array(5 * 1024 * 1024 + 1)]), { name: 'a.pdf' }), 'too_large'],
       ['name too long', pdf(`${'a'.repeat(300)}.pdf`), 'name_too_long'],
     ]

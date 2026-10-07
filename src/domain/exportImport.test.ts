@@ -188,7 +188,7 @@ describe('importData rejects bad input without throwing', () => {
       {
         code: 'invalid_value',
         path: 'applications[1].closedReason',
-        params: { allowed: ['no_reply', 'declined', 'withdrawn'] },
+        params: { allowed: ['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'] },
       },
     ])
     expect(errorsOf(mutateApp((a) => (a['notes'] = 3)))[0]).toEqual({
@@ -205,6 +205,36 @@ describe('importData rejects bad input without throwing', () => {
     expect(errorsOf(mutateApp((a) => (a['status'] = 'applied')))).toEqual([
       { code: 'closed_reason_mismatch', path: 'applications[1].closedReason', params: { status: 'applied' } },
     ])
+  })
+
+  it.each(['no_reply', 'not_selected', 'declined_offer', 'withdrawn', 'declined'])(
+    'accepts the closed reason %s (declined is the older, ambiguous one and is kept as it is)',
+    (reason) => {
+      const r = importData(mutateApp((a) => (a['closedReason'] = reason)))
+      expect(r.ok && r.state.applications[1]?.closedReason).toBe(reason)
+    },
+  )
+
+  it('checks closedFrom: a known stage, and only on a closed application', () => {
+    const ok = importData(mutateApp((a) => (a['closedFrom'] = 'interview')))
+    expect(ok.ok && ok.state.applications[1]?.closedFrom).toBe('interview')
+    expect(errorsOf(mutateApp((a) => (a['closedFrom'] = 'closed')))).toEqual([
+      {
+        code: 'invalid_value',
+        path: 'applications[1].closedFrom',
+        params: { allowed: ['to_apply', 'applied', 'interview', 'offer'] },
+      },
+    ])
+    expect(errorsOf(mutateApp((a) => (a['closedFrom'] = 'applied'), 0))).toEqual([
+      { code: 'closed_reason_mismatch', path: 'applications[0].closedFrom', params: { status: 'to_apply' } },
+    ])
+  })
+
+  it('round-trips closedFrom and leaves it out when not set', () => {
+    const closed = state.applications.map((a) => (a.status === 'closed' ? { ...a, closedFrom: 'offer' as const } : a))
+    const withFrom: AppState = { ...state, applications: closed }
+    expect(importData(JSON.parse(JSON.stringify(exportData(withFrom))))).toEqual({ ok: true, state: withFrom })
+    expect(exportData(state).applications.some((a) => 'closedFrom' in a)).toBe(false)
   })
 
   it('requires the dates of the stage an application is currently at', () => {
@@ -403,7 +433,7 @@ describe('version 1 files', () => {
     expect(errorsOf(v1)[0]).toEqual({ code: 'wrong_type', path: 'cvs', params: { expected: 'array', actual: 'string' } })
   })
 
-  it('accept the old file shape with no CV file details and no toldThem', () => {
+  it('accept the old file shape with no CV file details', () => {
     const old = {
       version: 1,
       cvs: [{ id: 'c', name: 'Short' }],
@@ -414,12 +444,24 @@ describe('version 1 files', () => {
   })
 })
 
-describe('CV file details and toldThem', () => {
+describe('an old toldThem field', () => {
+  it('is ignored, whatever it holds, and is not exported again', () => {
+    for (const value of ['Jag nämnde React', 5, null, { x: 1 }]) {
+      const r = importData(mutateApp((a) => (a['toldThem'] = value), 0))
+      expect(r.ok).toBe(true)
+      if (r.ok) {
+        expect('toldThem' in (r.state.applications[0] ?? {})).toBe(false)
+        expect(JSON.stringify(exportData(r.state))).not.toContain('toldThem')
+      }
+    }
+  })
+})
+
+describe('CV file details', () => {
   const file = { fileName: 'cv.pdf', size: 1000, type: 'application/pdf' as const }
   const withFile: AppState = {
     ...state,
     cvs: [{ id: 'cv1', name: 'Short', createdAt: '2026-10-01T08:00:00.000Z', file }, ...state.cvs.slice(1)],
-    applications: state.applications.map((a, i) => (i === 0 ? { ...a, toldThem: 'Jag nämnde React 😀' } : a)),
   }
 
   // A rejected CV also leaves its applications pointing at a missing CV; only the CV errors matter here.
@@ -438,7 +480,6 @@ describe('CV file details and toldThem', () => {
   it('are left out of the export when not set', () => {
     const out = exportData(state)
     expect(Object.keys(out.cvs[0] ?? {})).toEqual(['id', 'name'])
-    expect('toldThem' in (out.applications[0] ?? {})).toBe(false)
   })
 
   it('reject a file that is not an object, and missing or wrong parts', () => {
@@ -473,16 +514,13 @@ describe('CV file details and toldThem', () => {
     ])
   })
 
-  it('reject a bad createdAt on a CV and a non-text toldThem', () => {
+  it('reject a bad createdAt on a CV', () => {
     expect(cvErrorsOf(mutateCv((cv) => (cv['createdAt'] = 'yesterday')))).toEqual([
       { code: 'invalid_date', path: 'cvs[0].createdAt' },
     ])
-    expect(errorsOf(mutateApp((a) => (a['toldThem'] = 5), 0))).toEqual([
-      { code: 'wrong_type', path: 'applications[0].toldThem', params: { expected: 'string', actual: 'number' } },
-    ])
   })
 
-  it('keeps markup in file names and toldThem as plain text', () => {
+  it('keeps markup in file names as plain text', () => {
     const r = importData(mutateCv((cv) => (cv['file'] = { ...file, fileName: '<img src=x>.pdf' })))
     expect(r.ok && r.state.cvs[0]?.file?.fileName).toBe('<img src=x>.pdf')
   })

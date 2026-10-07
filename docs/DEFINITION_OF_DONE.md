@@ -7,7 +7,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 ## Design rules
 
 1. **It must save time, not cost it.** Adding a job takes under 10 seconds from a link or the bookmarklet. If a feature adds typing, it is cut.
-2. **Every application is a record.** It holds the link, the exact CV file that was sent, what was said to the employer, notes and dates, so the user can stand by what they told them.
+2. **Every application is a record.** It holds the link, the exact CV file that was sent, notes and dates, so the user can stand by what they sent.
 3. **No accounts, no server, no API keys.** Data never leaves the browser.
 4. **Respect the user.** Neutral wording, no red "rejected" counters, counts of what the user did this week. Nothing nags: the user decides what happens next.
 
@@ -16,7 +16,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 1. **Link-first quick add.** Paste a link, optionally choose a CV from a dropdown, then "Add to apply list" or "Add as applied". Company and role are optional and editable. From a pasted link only the website name can be filled in.
 2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. No server, no AI.
 3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used is linked to the application and opens from its row.
-4. **Application record.** Link (opens from the row), CV file, "what I told them" message, notes, and dates.
+4. **Application record.** Link (opens from the row), CV file, notes, and dates.
 5. **Lists and statuses.** To apply and Applied, with Interview and Offer as statuses, and a collapsed Closed section (reason: no reply, not selected, declined offer, withdrawn). The layout (lists or columns) is decided from an approved mockup before it is built.
 6. **Reminders that compute themselves, and are optional.** "No reply after N days" can be switched on or off in settings, and N is a setting.
 7. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.

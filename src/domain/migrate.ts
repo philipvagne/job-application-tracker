@@ -14,7 +14,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * importData then reports the problem.
  *
  * - 1 -> 2: nothing to rewrite. Version 2 only adds optional fields (CV file details,
- *   a CV's createdAt, an application's toldThem).
+ *   a CV's createdAt). A "toldThem" field in an old file is ignored by importData.
+ *   Version 2 also gained an optional closedFrom on applications and the closed reasons
+ *   not_selected and declined_offer, which needed no version change.
  */
 export function migrateToLatest(input: unknown): unknown {
   if (!isRecord(input) || input['version'] !== 1) return input

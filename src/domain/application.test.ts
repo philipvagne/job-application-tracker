@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { changeStatus, createApplication, markApplied, markReplied, newApplication, updateApplication } from './application'
+import {
+  changeStatus,
+  createApplication,
+  markApplied,
+  markReplied,
+  newApplication,
+  reopenTarget,
+  updateApplication,
+} from './application'
 import { STATUSES, type Application, type Status } from './types'
 
 const T0 = '2026-10-01T08:00:00.000Z'
@@ -185,8 +193,11 @@ describe('changeStatus effects', () => {
 
 describe('changeStatus closing and reopening', () => {
   it.each(['to_apply', 'applied', 'interview', 'offer'] as const)('closes from %s with a reason', (from) => {
-    const r = changeStatus(make({ status: from }), 'closed', T1, 'declined')
-    expect(r).toEqual({ ok: true, value: expect.objectContaining({ status: 'closed', closedReason: 'declined' }) })
+    const r = changeStatus(make({ status: from }), 'closed', T1, 'not_selected')
+    expect(r).toEqual({
+      ok: true,
+      value: expect.objectContaining({ status: 'closed', closedReason: 'not_selected', closedFrom: from }),
+    })
   })
 
   it('requires a closedReason when closing', () => {
@@ -196,7 +207,7 @@ describe('changeStatus closing and reopening', () => {
   it('keeps all dates when closing', () => {
     const app = make({ status: 'interview', appliedAt: T0, repliedAt: T1, interviewAt: T1 })
     const r = changeStatus(app, 'closed', T2, 'no_reply')
-    expect(r.ok && r.value).toEqual({ ...app, status: 'closed', closedReason: 'no_reply' })
+    expect(r.ok && r.value).toEqual({ ...app, status: 'closed', closedReason: 'no_reply', closedFrom: 'interview' })
   })
 
   it('reopens to applied when appliedAt exists and clears closedReason', () => {
@@ -206,6 +217,7 @@ describe('changeStatus closing and reopening', () => {
     if (r.ok) {
       expect(r.value.status).toBe('applied')
       expect('closedReason' in r.value).toBe(false)
+      expect('closedFrom' in r.value).toBe(false)
       expect(r.value.interviewAt).toBe(T1)
     }
   })
@@ -359,26 +371,42 @@ describe('changeStatus and the CV', () => {
   })
 })
 
-describe('toldThem', () => {
-  it('is saved, kept as typed, and survives other edits', () => {
-    const r = updateApplication(make(), { toldThem: '  Jag sa att jag kan börja 1 nov.\n' })
-    expect(r.ok && r.value.toldThem).toBe('  Jag sa att jag kan börja 1 nov.\n')
-    if (!r.ok) return
-    const again = updateApplication(r.value, { role: 'Lead' })
-    expect(again.ok && again.value.toldThem).toBe('  Jag sa att jag kan börja 1 nov.\n')
+describe('reopening to the stage it was closed from', () => {
+  const base = { status: 'closed', closedReason: 'no_reply', appliedAt: T0, interviewAt: T1, offerAt: T2 } as const
+
+  it.each(['applied', 'interview', 'offer'] as const)('goes back to %s', (from) => {
+    const closed = make({ ...base, closedFrom: from })
+    expect(reopenTarget(closed)).toBe(from)
+    const r = changeStatus(closed, from, T2)
+    expect(r.ok && r.value.status).toBe(from)
+    expect(r.ok && 'closedFrom' in r.value).toBe(false)
+    expect(r.ok && 'closedReason' in r.value).toBe(false)
   })
 
-  it('is removed when emptied', () => {
-    const r = updateApplication(make({ toldThem: 'x' }), { toldThem: '   ' })
-    expect(r.ok && 'toldThem' in r.value).toBe(false)
+  it('goes back to to_apply when closed from to_apply', () => {
+    const closed = make({ status: 'closed', closedReason: 'withdrawn', closedFrom: 'to_apply' })
+    expect(reopenTarget(closed)).toBe('to_apply')
   })
 
-  it('stays out of a new application', () => {
-    expect('toldThem' in make()).toBe(false)
+  it('round-trips through close and reopen', () => {
+    const open = make({ status: 'interview', appliedAt: T0, repliedAt: T1, interviewAt: T1 })
+    const closed = changeStatus(open, 'closed', T2, 'declined_offer')
+    if (!closed.ok) throw new Error('close failed')
+    expect(changeStatus(closed.value, 'interview', T2)).toEqual({ ok: true, value: open })
   })
 
-  it('keeps markup as plain text', () => {
-    const r = updateApplication(make(), { toldThem: '<script>alert(1)</script>' })
-    expect(r.ok && r.value.toldThem).toBe('<script>alert(1)</script>')
+  it('falls back to applied, or to_apply without appliedAt, when closedFrom is missing (older data)', () => {
+    expect(reopenTarget(make({ ...base }))).toBe('applied')
+    expect(reopenTarget(make({ status: 'closed', closedReason: 'declined' }))).toBe('to_apply')
+  })
+
+  it('ignores a closedFrom that does not fit the dates', () => {
+    expect(reopenTarget(make({ status: 'closed', closedReason: 'no_reply', closedFrom: 'offer' }))).toBe('to_apply')
+    expect(reopenTarget(make({ ...base, closedFrom: 'to_apply' }))).toBe('applied')
+  })
+
+  it('rejects reopening to a different stage', () => {
+    const closed = make({ ...base, closedFrom: 'interview' })
+    expect(changeStatus(closed, 'applied', T2)).toEqual({ ok: false, error: 'invalid_transition' })
   })
 })
