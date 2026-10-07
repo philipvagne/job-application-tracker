@@ -1,11 +1,13 @@
-import { useEffect, useId, useState, type ChangeEvent } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import {
-  DEFAULT_SETTINGS,
   MAX_REMINDER_DAYS,
   MIN_REMINDER_DAYS,
+  editReminderDraft,
   parseReminderDays,
+  reminderFieldText,
   type AppState,
   type ImportError,
+  type ReminderDraft,
 } from '../domain'
 import { formatDate, formatImportError } from '../i18n'
 import { useApp } from '../state/AppContext'
@@ -31,7 +33,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const importId = useId()
   const importHintId = useId()
 
-  const [draft, setDraft] = useState(String(state.settings.reminderDays))
+  const importInputRef = useRef<HTMLInputElement>(null)
+
+  // What the user typed, used only while it still matches what is saved (see reminderFieldText).
+  const [draft, setDraft] = useState<ReminderDraft | null>(null)
   const [message, setMessage] = useState<Message>(null)
   const [importErrors, setImportErrors] = useState<ImportError[]>([])
   const [importReadFailed, setImportReadFailed] = useState(false)
@@ -39,25 +44,31 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
 
-  // Start from a clean slate each time the dialog opens.
-  useEffect(() => {
-    if (!open) return
-    setDraft(String(state.settings.reminderDays))
+  // Closing the dialog, by button or Escape, leaves nothing behind for the next time.
+  function handleClose(): void {
+    setDraft(null)
     setMessage(null)
     setImportErrors([])
     setImportReadFailed(false)
     setDeleteFailed(false)
-    // Only when it opens; typing must not be overwritten by saved values.
-  }, [open])
+    onClose()
+  }
 
-  const reminderInvalid = parseReminderDays(draft) === null
+  const savedDays = state.settings.reminderDays
+  const reminderText = reminderFieldText(draft, savedDays)
+  const reminderInvalid = parseReminderDays(reminderText) === null
   const range = { min: MIN_REMINDER_DAYS, max: MAX_REMINDER_DAYS }
 
   function onReminderChange(event: ChangeEvent<HTMLInputElement>): void {
     const text = event.target.value
-    setDraft(text)
+    setDraft(editReminderDraft(text, savedDays))
     const days = parseReminderDays(text)
     if (days !== null) actions.setReminderDays(days)
+  }
+
+  // A valid draft is already saved, so show the saved number again. An invalid one stays with its error.
+  function onReminderBlur(): void {
+    if (draft !== null && parseReminderDays(draft.text) !== null) setDraft(null)
   }
 
   function startImport(next: AppState): void {
@@ -71,28 +82,30 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   }
 
   async function onFileChosen(event: ChangeEvent<HTMLInputElement>): Promise<void> {
-    const input = event.target
-    const file = input.files?.[0]
-    input.value = '' // so choosing the same file again still triggers a change
-    if (file === undefined) return
+    const file = event.target.files?.[0]
     setMessage(null)
     setImportErrors([])
     setImportReadFailed(false)
-
-    if (file.size > MAX_IMPORT_BYTES) {
-      setImportErrors([{ code: 'too_large', path: '$', params: { maxBytes: MAX_IMPORT_BYTES } }])
-      return
-    }
-    let text: string
     try {
-      text = await file.text()
-    } catch {
-      setImportReadFailed(true)
-      return
+      if (file === undefined) return
+      if (file.size > MAX_IMPORT_BYTES) {
+        setImportErrors([{ code: 'too_large', path: '$', params: { maxBytes: MAX_IMPORT_BYTES } }])
+        return
+      }
+      let text: string
+      try {
+        text = await file.text()
+      } catch {
+        setImportReadFailed(true)
+        return
+      }
+      const result = readImportText(text)
+      if (result.ok) startImport(result.state)
+      else setImportErrors(result.errors)
+    } finally {
+      // After every attempt, so choosing the same file again still triggers a change.
+      if (importInputRef.current !== null) importInputRef.current.value = ''
     }
-    const result = readImportText(text)
-    if (result.ok) startImport(result.state)
-    else setImportErrors(result.errors)
   }
 
   function confirmImport(): void {
@@ -108,7 +121,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     if (actions.deleteAllData()) {
       setDeleteFailed(false)
       setMessage('deleted')
-      setDraft(String(DEFAULT_SETTINGS.reminderDays))
+      setDraft(null)
     } else {
       setDeleteFailed(true)
     }
@@ -127,7 +140,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} titleId={titleId}>
+      <Dialog open={open} onClose={handleClose} titleId={titleId}>
         <h2 id={titleId} className="dialog__title">
           {t('settings.title')}
         </h2>
@@ -146,8 +159,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               type="text"
               inputMode="numeric"
               autoComplete="off"
-              value={draft}
+              value={reminderText}
               onChange={onReminderChange}
+              onBlur={onReminderBlur}
               aria-invalid={reminderInvalid}
               aria-describedby={reminderInvalid ? `${reminderHintId} ${reminderErrorId}` : reminderHintId}
             />
@@ -184,6 +198,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             <label htmlFor={importId}>{t('settings.import.label')}</label>
             <input
               id={importId}
+              ref={importInputRef}
               className="input"
               type="file"
               accept=".json,application/json"
@@ -230,7 +245,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         </section>
 
         <div className="dialog__actions">
-          <button type="button" className="btn btn--primary" onClick={onClose}>
+          <button type="button" className="btn btn--primary" onClick={handleClose}>
             {t('common.close')}
           </button>
         </div>
@@ -241,6 +256,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         title={t('confirm.replace.title')}
         body={t('confirm.replace.body')}
         confirmLabel={t('confirm.replace.button')}
+        danger
         onConfirm={confirmImport}
         onCancel={() => setPendingImport(null)}
       />
@@ -249,6 +265,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         title={t('confirm.delete.title')}
         body={t('confirm.delete.body')}
         confirmLabel={t('confirm.delete.button')}
+        danger
         onConfirm={confirmDeleteAll}
         onCancel={() => setConfirmDelete(false)}
       />

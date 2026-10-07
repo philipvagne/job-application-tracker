@@ -7,12 +7,22 @@ interface ConfirmDialogProps {
   title: string
   body: string
   confirmLabel: string
+  /** Gives the confirm button the danger style, for actions that destroy data. */
+  danger?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
 
 /** A question with a safe default: Cancel has the focus. Offers an export before going ahead. */
-export function ConfirmDialog({ open, title, body, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirmLabel,
+  danger = false,
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
   const { t, actions } = useApp()
   const titleId = useId()
   const [exported, setExported] = useState(false)
@@ -46,7 +56,7 @@ export function ConfirmDialog({ open, title, body, confirmLabel, onConfirm, onCa
         <button type="button" className="btn" data-autofocus onClick={onCancel}>
           {t('common.cancel')}
         </button>
-        <button type="button" className="btn btn--primary" onClick={onConfirm}>
+        <button type="button" className={danger ? 'btn btn--danger' : 'btn btn--primary'} onClick={onConfirm}>
           {confirmLabel}
         </button>
       </div>

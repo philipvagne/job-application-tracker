@@ -14,6 +14,25 @@ export function parseReminderDays(text: string): number | null {
   return days >= MIN_REMINDER_DAYS && days <= MAX_REMINDER_DAYS ? days : null
 }
 
+/**
+ * What the user has typed in the reminder field. `baseline` is the saved number the draft
+ * belongs to: the number it saved itself, or the number that was saved when it was invalid.
+ */
+export interface ReminderDraft {
+  text: string
+  baseline: number
+}
+
+/** Starts or updates a draft from typed text, given the number saved before this edit. */
+export function editReminderDraft(text: string, saved: number): ReminderDraft {
+  return { text, baseline: parseReminderDays(text) ?? saved }
+}
+
+/** The text to show: the draft while the saved number is still the one it belongs to, else the saved number. */
+export function reminderFieldText(draft: ReminderDraft | null, saved: number): string {
+  return draft !== null && draft.baseline === saved ? draft.text : String(saved)
+}
+
 /** Keeps the state unchanged if `days` is not a whole number within range. */
 export function setReminderDays(state: AppState, days: number): AppState {
   if (!Number.isInteger(days) || days < MIN_REMINDER_DAYS || days > MAX_REMINDER_DAYS) return state

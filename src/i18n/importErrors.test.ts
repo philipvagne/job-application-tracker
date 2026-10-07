@@ -1,23 +1,49 @@
 import { describe, expect, it } from 'vitest'
 import { importData, type ImportError, type ImportErrorCode } from '../domain'
 import { readImportText } from '../storage'
-import { formatImportError } from './importErrors'
+import { formatImportError, formatImportPath } from './importErrors'
 import { dictionaries } from './t'
 
 const en = dictionaries.en
 const sv = dictionaries.sv
 
+describe('formatImportPath', () => {
+  it('numbers list items from 1 and translates nested names', () => {
+    expect(formatImportPath('applications[0].status', en)).toBe('Applications, #1, status')
+    expect(formatImportPath('applications[1].closedReason', sv)).toBe('Ansökningar, #2, orsak till avslut')
+    expect(formatImportPath('cvs[2]', en)).toBe('CV list, #3')
+    expect(formatImportPath('cvs[2].name', sv)).toBe('CV-listan, #3, namn')
+  })
+
+  it('keeps unknown names and paths that do not start with a known part', () => {
+    expect(formatImportPath('applications[0].extra', en)).toBe('Applications, #1, extra')
+    expect(formatImportPath('version', en)).toBe('version')
+    expect(formatImportPath('$', en)).toBe('$')
+    expect(formatImportPath('a.status', en)).toBe('a.status')
+    expect(formatImportPath('constructor', en)).toBe('constructor')
+    expect(formatImportPath('applications[x]', en)).toBe('applications[x]')
+  })
+})
+
 describe('formatImportError', () => {
   it('fills in params', () => {
     const error: ImportError = { code: 'out_of_range', path: 'settings.reminderDays', params: { min: 1, max: 365 } }
-    expect(formatImportError(error, en)).toBe('settings.reminderDays: must be a whole number from 1 to 365.')
-    expect(formatImportError(error, sv)).toBe('settings.reminderDays: måste vara ett heltal från 1 till 365.')
+    expect(formatImportError(error, en)).toBe('Settings, reminder days: must be a whole number from 1 to 365.')
+    expect(formatImportError(error, sv)).toBe('Inställningar, dagar till påminnelse: måste vara ett heltal från 1 till 365.')
+  })
+
+  it('shows friendly names for the top-level parts', () => {
+    expect(formatImportError({ code: 'missing_field', path: 'cvs' }, en)).toBe('CV list: a required value is missing.')
+    expect(formatImportError({ code: 'missing_field', path: 'cvs' }, sv)).toBe('CV-listan: ett obligatoriskt värde saknas.')
+    expect(formatImportError({ code: 'missing_field', path: 'applications' }, en)).toBe(
+      'Applications: a required value is missing.',
+    )
   })
 
   it('translates type names and joins lists', () => {
     expect(
       formatImportError({ code: 'wrong_type', path: 'cvs', params: { expected: 'array', actual: 'string' } }, sv),
-    ).toBe('cvs: förväntade en lista, men hittade text.')
+    ).toBe('CV-listan: förväntade en lista, men hittade text.')
     expect(
       formatImportError({ code: 'invalid_value', path: 'a.status', params: { allowed: ['x', 'y'] } }, en),
     ).toBe('a.status: this value isn\'t allowed. Allowed values: x, y.')

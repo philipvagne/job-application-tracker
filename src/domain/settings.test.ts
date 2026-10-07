@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from './backup'
-import { parseReminderDays, resetState, setLanguage, setReminderDays } from './settings'
+import {
+  editReminderDraft,
+  parseReminderDays,
+  reminderFieldText,
+  resetState,
+  setLanguage,
+  setReminderDays,
+} from './settings'
 import type { AppState } from './types'
 
 function withData(): AppState {
@@ -35,6 +42,30 @@ describe('parseReminderDays', () => {
 
   it.each(['', ' ', '0', '366', '-1', '1.5', '1e2', 'abc', '14 days', '99999', '١٤'])('rejects %j', (text) => {
     expect(parseReminderDays(text)).toBeNull()
+  })
+})
+
+describe('reminder draft', () => {
+  it('shows the saved number when there is no draft', () => {
+    expect(reminderFieldText(null, 14)).toBe('14')
+  })
+
+  it('keeps showing a valid draft that it saved itself', () => {
+    const draft = editReminderDraft('030', 14) // saves 30
+    expect(draft.baseline).toBe(30)
+    expect(reminderFieldText(draft, 30)).toBe('030')
+  })
+
+  it('keeps an invalid draft while the saved number is unchanged', () => {
+    const draft = editReminderDraft('', 14)
+    expect(reminderFieldText(draft, 14)).toBe('')
+    expect(reminderFieldText(editReminderDraft('999', 14), 14)).toBe('999')
+  })
+
+  it('ignores a draft when the saved number changed from outside', () => {
+    expect(reminderFieldText(editReminderDraft('', 14), 21)).toBe('21')
+    expect(reminderFieldText(editReminderDraft('abc', 14), 7)).toBe('7')
+    expect(reminderFieldText(editReminderDraft('030', 14), 7)).toBe('7')
   })
 })
 

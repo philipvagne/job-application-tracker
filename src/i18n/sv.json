@@ -98,6 +98,32 @@
     "null": "ingenting (null)",
     "undefined": "ingenting"
   },
+  "importPaths": {
+    "roots": {
+      "applications": "Ansökningar",
+      "cvs": "CV-listan",
+      "settings": "Inställningar"
+    },
+    "fields": {
+      "id": "id",
+      "name": "namn",
+      "company": "företag",
+      "role": "roll",
+      "url": "länk",
+      "status": "status",
+      "closedReason": "orsak till avslut",
+      "cvId": "CV",
+      "createdAt": "tillagd",
+      "appliedAt": "söktes",
+      "repliedAt": "svar",
+      "interviewAt": "intervju",
+      "offerAt": "erbjudande",
+      "notes": "anteckningar",
+      "reminderDays": "dagar till påminnelse",
+      "language": "språk",
+      "lastExportAt": "senaste export"
+    }
+  },
   "importErrors": {
     "unreadable": "Filen är ingen läsbar säkerhetskopia.",
     "unsupported_version": "Den här säkerhetskopian har version {found}, men appen läser version {supported}.",

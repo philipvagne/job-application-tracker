@@ -98,6 +98,32 @@
     "null": "nothing (null)",
     "undefined": "nothing"
   },
+  "importPaths": {
+    "roots": {
+      "applications": "Applications",
+      "cvs": "CV list",
+      "settings": "Settings"
+    },
+    "fields": {
+      "id": "id",
+      "name": "name",
+      "company": "company",
+      "role": "role",
+      "url": "link",
+      "status": "status",
+      "closedReason": "closing reason",
+      "cvId": "CV",
+      "createdAt": "date added",
+      "appliedAt": "date applied",
+      "repliedAt": "date of reply",
+      "interviewAt": "interview date",
+      "offerAt": "offer date",
+      "notes": "notes",
+      "reminderDays": "reminder days",
+      "language": "language",
+      "lastExportAt": "last export date"
+    }
+  },
   "importErrors": {
     "unreadable": "The file isn't a readable backup.",
     "unsupported_version": "This backup has version {found}, but this app reads version {supported}.",
