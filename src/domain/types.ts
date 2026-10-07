@@ -36,6 +36,8 @@ export interface Cv {
 export interface Settings {
   reminderDays: number
   language: Language
+  /** When the user last exported a backup. Absent if they never have. */
+  lastExportAt?: IsoDate
 }
 
 export interface AppState {

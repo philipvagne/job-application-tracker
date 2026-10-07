@@ -1,4 +1,5 @@
 export * from './application'
+export * from './backup'
 export * from './exportImport'
 export * from './parseJobTitle'
 export * from './reminders'
