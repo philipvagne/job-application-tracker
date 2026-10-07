@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "Jobbtracker"
+  },
+  "common": {
+    "close": "Stäng",
+    "cancel": "Avbryt",
+    "dismiss": "Dölj",
+    "export": "Exportera säkerhetskopia"
+  },
+  "language": {
+    "label": "Språk",
+    "sv": "Svenska",
+    "en": "English"
+  },
+  "empty": {
+    "title": "Lägg till din första ansökan",
+    "body": "Dina ansökningar visas här, i en enkel lista."
+  },
+  "footer": {
+    "privacy": "Dina uppgifter stannar i den här webbläsaren."
+  },
+  "banner": {
+    "notSaved": {
+      "title": "Ändringar kan inte sparas i den här webbläsaren",
+      "body": "Dina uppgifter finns bara kvar medan fliken är öppen. Exportera en säkerhetskopia för att behålla en kopia."
+    },
+    "unreadable": {
+      "title": "Vissa sparade uppgifter gick inte att läsa",
+      "bodyKept": "Vi har sparat en kopia av dem. Du kan ladda ner den, eller rensa den om du inte behöver den.",
+      "bodyOlderCopy": "En tidigare oläslig kopia finns redan sparad, så de nyare uppgifterna lämnas orörda. Ladda ner eller rensa den tidigare kopian för att fortsätta.",
+      "bodyNoCopy": "Vi kunde inte spara en kopia av dem, och de har lämnats orörda. Dina ändringar sparas bara tills du stänger fliken.",
+      "download": "Ladda ner de olästa uppgifterna",
+      "clear": "Rensa dem"
+    },
+    "saveFailed": {
+      "title": "Din senaste ändring kunde inte sparas",
+      "bodyQuota": "Webbläsarens lagringsutrymme är fullt. Exportera en säkerhetskopia så att inget går förlorat.",
+      "bodyUnknown": "Något hindrade webbläsaren från att spara. Exportera en säkerhetskopia så att inget går förlorat."
+    },
+    "backupDue": {
+      "title": "Dags för en säkerhetskopia?",
+      "body": "Exportera en kopia av dina uppgifter så att de är i säkerhet."
+    }
+  },
+  "settings": {
+    "open": "Inställningar",
+    "title": "Inställningar",
+    "reminder": {
+      "title": "Påminnelser",
+      "label": "Dagar innan en påminnelse om uteblivet svar",
+      "hint": "Ett heltal från {min} till {max}.",
+      "error": "Ange ett heltal från {min} till {max}."
+    },
+    "backup": {
+      "title": "Säkerhetskopia",
+      "lastExport": "Senaste export: {date}",
+      "neverExported": "Du har inte exporterat någon säkerhetskopia ännu.",
+      "exported": "Säkerhetskopian är exporterad."
+    },
+    "import": {
+      "label": "Importera en säkerhetskopia",
+      "hint": "Välj en .json-fil som exporterats från den här appen.",
+      "success": "Säkerhetskopian är importerad.",
+      "failedTitle": "Säkerhetskopian kunde inte importeras",
+      "readFailed": "Filen kunde inte öppnas.",
+      "more": "…och {count} till"
+    },
+    "delete": {
+      "title": "Radera all min data",
+      "body": "Tar bort alla ansökningar och inställningar från den här webbläsaren. Det går inte att ångra.",
+      "button": "Radera all min data",
+      "done": "All din data har raderats.",
+      "failed": "Dina uppgifter kunde inte raderas. Försök igen, eller rensa webbplatsens data i webbläsarens inställningar."
+    }
+  },
+  "confirm": {
+    "exportFirst": "Exportera dina nuvarande uppgifter först",
+    "exportDone": "Säkerhetskopian är exporterad.",
+    "replace": {
+      "title": "Ersätta dina nuvarande uppgifter?",
+      "body": "Om du importerar den här säkerhetskopian ersätts de uppgifter som nu är sparade i den här webbläsaren.",
+      "button": "Ersätt mina uppgifter"
+    },
+    "delete": {
+      "title": "Radera all din data?",
+      "body": "Allt som är sparat i den här webbläsaren tas bort. Exportera en säkerhetskopia först om du kan vilja ha tillbaka det.",
+      "button": "Ja, radera allt"
+    }
+  },
+  "typeNames": {
+    "array": "en lista",
+    "object": "ett objekt",
+    "string": "text",
+    "number": "ett tal",
+    "integer": "ett heltal",
+    "boolean": "sant eller falskt",
+    "null": "ingenting (null)",
+    "undefined": "ingenting"
+  },
+  "importErrors": {
+    "unreadable": "Filen är ingen läsbar säkerhetskopia.",
+    "unsupported_version": "Den här säkerhetskopian har version {found}, men appen läser version {supported}.",
+    "missing_field": "{path}: ett obligatoriskt värde saknas.",
+    "wrong_type": "{path}: förväntade {expected}, men hittade {actual}.",
+    "invalid_value": "{path}: värdet är inte tillåtet. Tillåtna värden: {allowed}.",
+    "empty_value": "{path}: värdet får inte vara tomt.",
+    "invalid_date": "{path}: det här är inte ett giltigt datum.",
+    "duplicate_id": "{path}: id:t “{id}” används mer än en gång.",
+    "unknown_cv": "{path}: hänvisar till ett CV som inte finns i säkerhetskopian (“{cvId}”).",
+    "closed_reason_mismatch": "{path}: orsaken till avslutet stämmer inte med statusen “{status}”.",
+    "out_of_range": "{path}: måste vara ett heltal från {min} till {max}.",
+    "too_large": "Filen är större än {maxMb} MB."
+  }
+}

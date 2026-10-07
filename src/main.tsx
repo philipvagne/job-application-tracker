@@ -1,11 +1,24 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { App } from './App'
+import { AppProvider } from './state/AppContext'
+import { loadApp } from './state/load'
+import { createBrowserStorage, createStateStore } from './storage'
+import './styles/tokens.css'
+import './styles/base.css'
+import './styles/components.css'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')
 
+// Loaded once here, outside React, so StrictMode's double render cannot load twice.
+const store = createStateStore(createBrowserStorage())
+const initial = loadApp(store, { navigatorLanguage: navigator.language })
+
 createRoot(root).render(
   <StrictMode>
-    <h1>Job Application Tracker</h1>
+    <AppProvider store={store} initial={initial}>
+      <App />
+    </AppProvider>
   </StrictMode>,
 )

@@ -25,6 +25,9 @@ export interface StateStore {
   /** The "delete all my data" button. Removes the state and any corrupt-data copy. */
   clearAllData(): ClearResult
   getCorruptBackup(): string | null
+  /** True if a saved state exists on disk (so this is not the user's first visit). */
+  hasSavedState(): boolean
+  /** If newer bad data was being protected, call loadState() afterwards to back it up. */
   clearCorruptBackup(): void
 }
 
@@ -45,8 +48,8 @@ function errorCode(e: unknown): SaveErrorCode {
  * upgrades older stored versions. Until then an unknown version is treated
  * as invalid data and backed up, not discarded.
  *
- * NOTE: two open tabs overwrite each other (last write wins). The UI pass will
- * listen for the `storage` event and handle it.
+ * NOTE: two open tabs overwrite each other (last write wins). The app listens for
+ * the `storage` event and reloads (see src/state/AppContext.tsx).
  */
 export function createStateStore(primary: Storage): StateStore {
   const memory = createMemoryStorage()
@@ -56,10 +59,16 @@ export function createStateStore(primary: Storage): StateStore {
 
   const active = (): Storage => (mode === 'primary' ? primary : memory)
 
+  /**
+   * True when `raw` is safely held under CORRUPT_BACKUP_KEY. An existing copy is
+   * never replaced. If it differs from `raw`, the new data is not backed up and the
+   * caller must leave it on disk until the user downloads or clears the old copy.
+   */
   function backUpCorrupt(raw: string): boolean {
     try {
-      // Keep the first copy: a later failure must not replace the original evidence.
-      if (primary.read(CORRUPT_BACKUP_KEY) === null) primary.write(CORRUPT_BACKUP_KEY, raw)
+      const existing = primary.read(CORRUPT_BACKUP_KEY)
+      if (existing === null) primary.write(CORRUPT_BACKUP_KEY, raw)
+      else if (existing !== raw) return false
       return true
     } catch {
       return false
@@ -117,6 +126,14 @@ export function createStateStore(primary: Storage): StateStore {
       return { ok: true }
     },
 
+    hasSavedState() {
+      try {
+        return primary.read(STATE_KEY) !== null
+      } catch {
+        return false
+      }
+    },
+
     getCorruptBackup() {
       try {
         return primary.read(CORRUPT_BACKUP_KEY)
@@ -130,7 +147,10 @@ export function createStateStore(primary: Storage): StateStore {
         primary.remove(CORRUPT_BACKUP_KEY)
       } catch {
         // Nothing useful to do; the copy stays.
+        return
       }
+      // The caller reloads next, which backs up any bad data still on disk.
+      if (mode === 'protected') mode = 'primary'
     },
   }
 }

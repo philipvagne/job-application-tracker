@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "Job Tracker"
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss",
+    "export": "Export backup"
+  },
+  "language": {
+    "label": "Language",
+    "sv": "Svenska",
+    "en": "English"
+  },
+  "empty": {
+    "title": "Add your first application",
+    "body": "Your applications will appear here, in a simple list."
+  },
+  "footer": {
+    "privacy": "Your data stays in this browser."
+  },
+  "banner": {
+    "notSaved": {
+      "title": "Changes can't be saved in this browser",
+      "body": "Your data is only kept while this tab is open. Export a backup to keep a copy."
+    },
+    "unreadable": {
+      "title": "Some saved data couldn't be read",
+      "bodyKept": "We kept a copy of it. You can download it, or clear it if you don't need it.",
+      "bodyOlderCopy": "An earlier unreadable copy is already stored, so the newer data is left untouched. Download or clear the earlier copy to continue.",
+      "bodyNoCopy": "We couldn't keep a copy of it, and it has been left untouched. Your changes are only kept until you close this tab.",
+      "download": "Download the unreadable data",
+      "clear": "Clear it"
+    },
+    "saveFailed": {
+      "title": "Your latest change couldn't be saved",
+      "bodyQuota": "This browser's storage is full. Export a backup so nothing is lost.",
+      "bodyUnknown": "Something stopped the browser from saving. Export a backup so nothing is lost."
+    },
+    "backupDue": {
+      "title": "Time for a backup?",
+      "body": "Export a copy of your data so it is safe."
+    }
+  },
+  "settings": {
+    "open": "Settings",
+    "title": "Settings",
+    "reminder": {
+      "title": "Reminders",
+      "label": "Days before a \"no reply\" reminder",
+      "hint": "A whole number from {min} to {max}.",
+      "error": "Enter a whole number from {min} to {max}."
+    },
+    "backup": {
+      "title": "Backup",
+      "lastExport": "Last export: {date}",
+      "neverExported": "You haven't exported a backup yet.",
+      "exported": "Backup exported."
+    },
+    "import": {
+      "label": "Import a backup",
+      "hint": "Choose a .json file exported from this app.",
+      "success": "Backup imported.",
+      "failedTitle": "The backup couldn't be imported",
+      "readFailed": "The file couldn't be opened.",
+      "more": "…and {count} more"
+    },
+    "delete": {
+      "title": "Delete all my data",
+      "body": "Removes all applications and settings from this browser. This can't be undone.",
+      "button": "Delete all my data",
+      "done": "All your data has been deleted.",
+      "failed": "Your data couldn't be deleted. Try again, or clear this site's data in your browser settings."
+    }
+  },
+  "confirm": {
+    "exportFirst": "Export your current data first",
+    "exportDone": "Backup exported.",
+    "replace": {
+      "title": "Replace your current data?",
+      "body": "Importing this backup replaces the data currently saved in this browser.",
+      "button": "Replace my data"
+    },
+    "delete": {
+      "title": "Delete all your data?",
+      "body": "Everything saved in this browser will be removed. Export a backup first if you might want it back.",
+      "button": "Yes, delete everything"
+    }
+  },
+  "typeNames": {
+    "array": "a list",
+    "object": "an object",
+    "string": "text",
+    "number": "a number",
+    "integer": "a whole number",
+    "boolean": "true or false",
+    "null": "nothing (null)",
+    "undefined": "nothing"
+  },
+  "importErrors": {
+    "unreadable": "The file isn't a readable backup.",
+    "unsupported_version": "This backup has version {found}, but this app reads version {supported}.",
+    "missing_field": "{path}: a required value is missing.",
+    "wrong_type": "{path}: expected {expected}, but found {actual}.",
+    "invalid_value": "{path}: this value isn't allowed. Allowed values: {allowed}.",
+    "empty_value": "{path}: this value can't be empty.",
+    "invalid_date": "{path}: this isn't a valid date.",
+    "duplicate_id": "{path}: the id “{id}” is used more than once.",
+    "unknown_cv": "{path}: refers to a CV that isn't in the backup (“{cvId}”).",
+    "closed_reason_mismatch": "{path}: the closing reason doesn't match the status “{status}”.",
+    "out_of_range": "{path}: must be a whole number from {min} to {max}.",
+    "too_large": "The file is larger than {maxMb} MB."
+  }
+}

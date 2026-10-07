@@ -1,3 +1,4 @@
+export * from './browserStorage'
 export * from './files'
 export * from './localStorageBackend'
 export * from './memoryStorage'

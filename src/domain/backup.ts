@@ -24,3 +24,8 @@ export function isBackupDue(state: AppState, now: IsoDate): boolean {
   if (Number.isNaN(nowMs) || Number.isNaN(lastMs)) return true
   return Math.floor((nowMs - lastMs) / DAY_MS) >= BACKUP_INTERVAL_DAYS
 }
+
+/** Records that the user exported a backup at `now`. */
+export function markExported(state: AppState, now: IsoDate): AppState {
+  return { ...state, settings: { ...state.settings, lastExportAt: now } }
+}

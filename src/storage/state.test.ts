@@ -102,14 +102,64 @@ describe('corrupt data recovery', () => {
     expect(fake.data.get(STATE_KEY)).toBe(raw)
   })
 
-  it('keeps the first backup when more corrupt data turns up later', () => {
+  it('a second, different corrupt load keeps the old copy and protects the new data', () => {
     const { fake, store } = setup()
     fake.data.set(STATE_KEY, 'first-bad')
     store.loadState()
     fake.data.set(STATE_KEY, 'second-bad')
-    const second = store.loadState()
-    expect(second.recovered).toBe(true)
-    expect(second.backedUp).toBe(true)
+    expect(store.loadState()).toEqual({
+      state: createEmptyState(),
+      recovered: true,
+      backedUp: false,
+      persistent: false,
+    })
+    expect(store.getCorruptBackup()).toBe('first-bad')
+    // Saving goes to memory; neither the new bad data nor the old copy is touched.
+    expect(store.saveState(sample)).toEqual({ ok: true, persistent: false })
+    expect(fake.data.get(STATE_KEY)).toBe('second-bad')
+    expect(fake.data.get(CORRUPT_BACKUP_KEY)).toBe('first-bad')
+  })
+
+  it('identical corrupt data on a later load counts as backed up', () => {
+    const { fake, store } = setup()
+    fake.data.set(STATE_KEY, 'bad')
+    store.loadState()
+    expect(store.loadState()).toEqual({
+      state: createEmptyState(),
+      recovered: true,
+      backedUp: true,
+      persistent: true,
+    })
+  })
+
+  it('after clearing the old copy, reloading backs up the new bad data', () => {
+    const { fake, store } = setup()
+    fake.data.set(STATE_KEY, 'first-bad')
+    store.loadState()
+    fake.data.set(STATE_KEY, 'second-bad')
+    store.loadState()
+    store.clearCorruptBackup()
+    expect(store.loadState()).toEqual({
+      state: createEmptyState(),
+      recovered: true,
+      backedUp: true,
+      persistent: true,
+    })
+    expect(store.getCorruptBackup()).toBe('second-bad')
+    expect(store.saveState(sample)).toEqual({ ok: true, persistent: true })
+  })
+
+  it('stays protected if the old copy cannot be removed', () => {
+    const { fake, store } = setup()
+    fake.data.set(STATE_KEY, 'first-bad')
+    store.loadState()
+    fake.data.set(STATE_KEY, 'second-bad')
+    store.loadState()
+    fake.failRemove = named('SecurityError')
+    store.clearCorruptBackup()
+    fake.failRemove = null
+    expect(store.saveState(sample)).toEqual({ ok: true, persistent: false })
+    expect(fake.data.get(STATE_KEY)).toBe('second-bad')
     expect(store.getCorruptBackup()).toBe('first-bad')
   })
 
@@ -145,6 +195,21 @@ describe('corrupt data recovery', () => {
     expect(store.clearAllData()).toEqual({ ok: true })
     expect(store.saveState(sample)).toEqual({ ok: true, persistent: true })
     expect(fake.data.has(STATE_KEY)).toBe(true)
+  })
+})
+
+describe('hasSavedState', () => {
+  it('is false before the first save and true after', () => {
+    const { store } = setup()
+    expect(store.hasSavedState()).toBe(false)
+    store.saveState(sample)
+    expect(store.hasSavedState()).toBe(true)
+  })
+
+  it('is false when storage throws', () => {
+    const { fake, store } = setup()
+    fake.failGet = named('SecurityError')
+    expect(store.hasSavedState()).toBe(false)
   })
 })
 

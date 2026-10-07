@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyState, isBackupDue } from './backup'
+import { createEmptyState, isBackupDue, markExported } from './backup'
 import type { AppState } from './types'
 
 const DAY_MS = 86_400_000
@@ -57,5 +57,29 @@ describe('isBackupDue', () => {
   it('treats unparseable dates as due', () => {
     expect(isBackupDue(stateWith(1, 'garbage'), LAST)).toBe(true)
     expect(isBackupDue(stateWith(1, LAST), 'garbage')).toBe(true)
+  })
+})
+
+describe('markExported', () => {
+  it('sets lastExportAt without changing anything else', () => {
+    const before = stateWith(2)
+    const after = markExported(before, LAST)
+    expect(after.settings).toEqual({ ...before.settings, lastExportAt: LAST })
+    expect(after.applications).toEqual(before.applications)
+    expect(after.cvs).toEqual(before.cvs)
+  })
+
+  it('replaces an older date and does not mutate the input', () => {
+    const before = stateWith(1, '2026-01-01T00:00:00.000Z')
+    const after = markExported(before, LAST)
+    expect(after.settings.lastExportAt).toBe(LAST)
+    expect(before.settings.lastExportAt).toBe('2026-01-01T00:00:00.000Z')
+    expect(after).not.toBe(before)
+  })
+
+  it('makes a backup no longer due', () => {
+    const before = stateWith(1)
+    expect(isBackupDue(before, LAST)).toBe(true)
+    expect(isBackupDue(markExported(before, LAST), LAST)).toBe(false)
   })
 })
