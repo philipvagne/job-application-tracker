@@ -3,9 +3,10 @@ import { LANGUAGES } from './domain'
 import { useApp } from './state/AppContext'
 import { Banners } from './ui/Banners'
 import { SettingsDialog } from './ui/SettingsDialog'
+import { Tracker } from './ui/Tracker'
 
 export function App() {
-  const { t, language, state, actions } = useApp()
+  const { t, language, actions } = useApp()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
@@ -36,12 +37,7 @@ export function App() {
 
       <main className="main">
         <Banners />
-        {state.applications.length === 0 && (
-          <section className="empty" aria-labelledby="empty-title">
-            <h2 id="empty-title">{t('empty.title')}</h2>
-            <p>{t('empty.body')}</p>
-          </section>
-        )}
+        <Tracker />
       </main>
 
       <footer className="footer">

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
 
@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   confirmLabel: string
   /** Gives the confirm button the danger style, for actions that destroy data. */
   danger?: boolean
+  /** Extra content under the text, such as a field for a choice. */
+  children?: ReactNode
   onConfirm: () => void
   onCancel: () => void
 }
@@ -20,6 +22,7 @@ export function ConfirmDialog({
   body,
   confirmLabel,
   danger = false,
+  children,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -37,6 +40,7 @@ export function ConfirmDialog({
         {title}
       </h2>
       <p>{body}</p>
+      {children}
       <p>
         <button
           type="button"

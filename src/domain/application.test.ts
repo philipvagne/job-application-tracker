@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { changeStatus, createApplication, markApplied, markReplied } from './application'
+import { changeStatus, createApplication, markApplied, markReplied, newApplication, updateApplication } from './application'
 import { STATUSES, type Application, type Status } from './types'
 
 const T0 = '2026-10-01T08:00:00.000Z'
@@ -224,5 +224,137 @@ describe('changeStatus closing and reopening', () => {
   it.each(['applied', 'interview', 'offer'] as const)('rejects reopening to %s when appliedAt is missing', (to) => {
     const closed = make({ status: 'closed', closedReason: 'withdrawn' })
     expect(changeStatus(closed, to, T1)).toEqual({ ok: false, error: 'invalid_transition' })
+  })
+})
+
+describe('createApplication without a CV', () => {
+  it('leaves cvId out', () => {
+    const a = createApplication({ id: 'x', company: 'A', role: '', url: '' }, T0)
+    expect('cvId' in a).toBe(false)
+  })
+})
+
+describe('newApplication', () => {
+  it('trims and creates a to_apply application, with an empty role and link allowed', () => {
+    expect(newApplication({ id: 'n1', company: '  Acme  ', role: '', url: '' }, T0)).toEqual({
+      ok: true,
+      value: { id: 'n1', company: 'Acme', role: '', url: '', status: 'to_apply', createdAt: T0 },
+    })
+  })
+
+  it('reports an empty company and a bad link together', () => {
+    expect(newApplication({ id: 'n1', company: '   ', role: 'Dev', url: 'javascript:alert(1)' }, T0)).toEqual({
+      ok: false,
+      error: ['company_required', 'invalid_url'],
+    })
+  })
+})
+
+describe('updateApplication', () => {
+  it('changes company, role, link and notes, trimming them', () => {
+    const r = updateApplication(make(), { company: ' New AB ', role: ' Lead ', url: ' https://a.se/x ', notes: 'hej' })
+    expect(r).toEqual({
+      ok: true,
+      value: expect.objectContaining({ company: 'New AB', role: 'Lead', url: 'https://a.se/x', notes: 'hej' }),
+    })
+  })
+
+  it('keeps fields that are not in the changes, and everything else about the application', () => {
+    const app = make({ status: 'applied', appliedAt: T0, notes: 'old' })
+    const r = updateApplication(app, { role: 'Other' })
+    expect(r).toEqual({ ok: true, value: { ...app, role: 'Other' } })
+  })
+
+  it('does not mutate the input', () => {
+    const app = make()
+    updateApplication(app, { company: 'Z' })
+    expect(app).toEqual(make())
+  })
+
+  it.each(['', '   ', '\t'])('rejects an empty company %j', (company) => {
+    expect(updateApplication(make(), { company })).toEqual({ ok: false, error: ['company_required'] })
+  })
+
+  it('allows an empty role and an empty link', () => {
+    const r = updateApplication(make({ url: 'https://a.se' }), { role: '', url: '' })
+    expect(r.ok && [r.value.role, r.value.url]).toEqual(['', ''])
+  })
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,x',
+    'ftp://a.se',
+    'a.se',
+    'https://',
+    'https://a b.se',
+  ])('rejects the link %j', (url) => {
+    expect(updateApplication(make(), { url })).toEqual({ ok: false, error: ['invalid_url'] })
+  })
+
+  it('removes empty notes and keeps text notes as typed', () => {
+    const withNotes = make({ notes: 'something' })
+    const cleared = updateApplication(withNotes, { notes: '  ' })
+    expect(cleared.ok && 'notes' in cleared.value).toBe(false)
+    const kept = updateApplication(withNotes, { notes: '  line\nmore  ' })
+    expect(kept.ok && kept.value.notes).toBe('  line\nmore  ')
+  })
+
+  it('keeps markup in text as plain text', () => {
+    const r = updateApplication(make(), { company: '<b>Acme</b>' })
+    expect(r.ok && r.value.company).toBe('<b>Acme</b>')
+  })
+})
+
+describe('changeStatus and the CV', () => {
+  const noCv = (overrides: Partial<Application> = {}): Application => {
+    const { cvId: _removed, ...rest } = make(overrides)
+    return rest
+  }
+
+  it('needs a CV for to_apply -> interview when there is none', () => {
+    expect(changeStatus(noCv(), 'interview', T1)).toEqual({ ok: false, error: 'cv_required' })
+    expect(changeStatus(noCv(), 'interview', T1, undefined, '')).toEqual({ ok: false, error: 'cv_required' })
+  })
+
+  it('sets the CV when one is supplied for to_apply -> interview', () => {
+    const r = changeStatus(noCv(), 'interview', T1, undefined, 'cv7')
+    expect(r.ok && r.value).toEqual(expect.objectContaining({ status: 'interview', cvId: 'cv7', appliedAt: T1 }))
+  })
+
+  it('needs a CV for to_apply -> applied when there is none', () => {
+    expect(changeStatus(noCv(), 'applied', T1)).toEqual({ ok: false, error: 'cv_required' })
+    expect(changeStatus(noCv(), 'applied', T1, undefined, 'cv7').ok).toBe(true)
+  })
+
+  it('uses the CV the application already has when none is supplied', () => {
+    const r = changeStatus(make({ cvId: 'cv9' }), 'interview', T1)
+    expect(r.ok && r.value.cvId).toBe('cv9')
+  })
+
+  it('prefers a supplied CV over the existing one', () => {
+    const r = changeStatus(make({ cvId: 'cv9' }), 'interview', T1, undefined, 'cv7')
+    expect(r.ok && r.value.cvId).toBe('cv7')
+  })
+
+  it('does not need a CV to close, to step back to to_apply, or to reopen to to_apply', () => {
+    expect(changeStatus(noCv(), 'closed', T1, 'withdrawn').ok).toBe(true)
+    expect(changeStatus(noCv({ status: 'closed', closedReason: 'withdrawn' }), 'to_apply', T1).ok).toBe(true)
+  })
+
+  it('keeps the CV when stepping back to to_apply', () => {
+    const r = changeStatus(make({ status: 'applied', appliedAt: T0, cvId: 'cv1' }), 'to_apply', T1)
+    expect(r.ok && r.value.cvId).toBe('cv1')
+  })
+
+  it('asks for a CV when reopening an applied application that has none', () => {
+    const closed = noCv({ status: 'closed', closedReason: 'withdrawn', appliedAt: T0 })
+    expect(changeStatus(closed, 'applied', T1)).toEqual({ ok: false, error: 'cv_required' })
+    expect(changeStatus(closed, 'applied', T1, undefined, 'cv1').ok).toBe(true)
+  })
+
+  it('does not mutate the input when it fails', () => {
+    const app = noCv()
+    changeStatus(app, 'interview', T1)
+    expect(app).toEqual(noCv())
   })
 })

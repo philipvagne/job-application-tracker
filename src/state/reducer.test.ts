@@ -43,6 +43,40 @@ describe('reducer', () => {
     expect(after.applications).toHaveLength(1)
   })
 
+  it('addApplications appends', () => {
+    const app = { id: 'a2', company: 'Globex', role: '', url: '', status: 'to_apply' as const, createdAt: '2026-10-02T08:00:00.000Z' }
+    const after = reducer(stateWithData(), { type: 'addApplications', applications: [app] })
+    expect(after.applications.map((a) => a.id)).toEqual(['a1', 'a2'])
+  })
+
+  it('replaceApplication and deleteApplication change one application', () => {
+    const before = stateWithData()
+    const first = before.applications[0]!
+    const edited = reducer(before, { type: 'replaceApplication', application: { ...first, company: 'New' } })
+    expect(edited.applications[0]?.company).toBe('New')
+    expect(reducer(before, { type: 'replaceApplication', application: { ...first, id: 'zzz' } })).toBe(before)
+    expect(reducer(before, { type: 'deleteApplication', id: 'a1' }).applications).toEqual([])
+    expect(reducer(before, { type: 'deleteApplication', id: 'zzz' })).toBe(before)
+  })
+
+  it('addCv adds a CV, and ignores an empty or repeated name', () => {
+    const before = stateWithData()
+    expect(reducer(before, { type: 'addCv', id: 'cv2', name: ' Long ' }).cvs.map((c) => c.name)).toEqual(['Short', 'Long'])
+    expect(reducer(before, { type: 'addCv', id: 'cv2', name: ' ' })).toBe(before)
+    expect(reducer(before, { type: 'addCv', id: 'cv2', name: 'short' })).toBe(before)
+  })
+
+  it('markApplied sets the date, the CV and lastCvId, and ignores an unknown CV', () => {
+    const before = stateWithData()
+    const after = reducer(before, { type: 'markApplied', id: 'a1', cvId: 'cv1', now: '2026-10-07T09:00:00.000Z' })
+    expect(after.applications[0]).toEqual(
+      expect.objectContaining({ status: 'applied', cvId: 'cv1', appliedAt: '2026-10-07T09:00:00.000Z' }),
+    )
+    expect(after.settings.lastCvId).toBe('cv1')
+    expect(reducer(before, { type: 'markApplied', id: 'a1', cvId: 'nope', now: '2026-10-07T09:00:00.000Z' })).toBe(before)
+  })
+
+
   it('reset removes the data and keeps the language', () => {
     const after = reducer(stateWithData(), { type: 'reset' })
     expect(after.applications).toEqual([])

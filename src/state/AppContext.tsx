@@ -1,5 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { isBackupDue, type AppState, type Language } from '../domain'
+import {
+  addCv,
+  changeStatus,
+  isBackupDue,
+  markReplied,
+  newApplication,
+  parsePastedList,
+  updateApplication,
+  type AppState,
+  type Application,
+  type ApplicationChanges,
+  type ApplicationFieldError,
+  type ClosedReason,
+  type CvError,
+  type Language,
+  type Result,
+  type Status,
+  type TransitionError,
+} from '../domain'
 import { dictionaries, t as translate, type Dict, type Params, type TextKey } from '../i18n'
 import { CORRUPT_BACKUP_KEY, STATE_KEY, buildExportFile, type SaveErrorCode, type StateStore } from '../storage'
 import { downloadTextFile } from '../ui/download'
@@ -27,6 +45,18 @@ export interface AppContextValue {
     clearUnreadable(): void
     dismissSaveError(): void
     dismissBackupReminder(): void
+    /** Adds a to-apply application. Fails, changing nothing, if company or link is not acceptable. */
+    addApplication(input: { company: string; role: string; url: string }): Result<Application, ApplicationFieldError[]>
+    /** Adds every usable line of pasted text. Returns how many were added and how many lines were skipped. */
+    addPasted(text: string): { added: number; skipped: number }
+    editApplication(id: string, changes: ApplicationChanges): Result<Application, ApplicationFieldError[]>
+    deleteApplication(id: string): void
+    /** Adds a CV and returns it. Fails if the name is empty or already used. */
+    addCv(name: string): Result<{ id: string; name: string }, CvError>
+    /** Marks a to-apply application as applied with this CV, and remembers the CV. */
+    markApplied(id: string, cvId: string): boolean
+    markReplied(id: string): boolean
+    changeStatus(id: string, to: Status, closedReason?: ClosedReason): Result<Application, TransitionError | 'unknown_application'>
   }
 }
 
@@ -172,6 +202,66 @@ export function AppProvider({ store, initial, children }: AppProviderProps) {
 
       dismissSaveError: () => setSaveError(null),
       dismissBackupReminder: () => setReminderDismissed(true),
+
+      // Ids and times are made here, in the UI layer. The domain never creates them.
+      addApplication(input) {
+        const result = newApplication({ id: crypto.randomUUID(), ...input }, nowIso())
+        if (result.ok) commit({ type: 'addApplications', applications: [result.value] })
+        return result
+      },
+
+      addPasted(text) {
+        const { items, skipped } = parsePastedList(text)
+        const now = nowIso()
+        const applications: Application[] = []
+        for (const item of items) {
+          const result = newApplication({ id: crypto.randomUUID(), ...item }, now)
+          if (result.ok) applications.push(result.value)
+        }
+        commit({ type: 'addApplications', applications })
+        return { added: applications.length, skipped: skipped + (items.length - applications.length) }
+      },
+
+      editApplication(id, changes) {
+        const current = stateRef.current.applications.find((a) => a.id === id)
+        if (current === undefined) return { ok: false, error: [] }
+        const result = updateApplication(current, changes)
+        if (result.ok) commit({ type: 'replaceApplication', application: result.value })
+        return result
+      },
+
+      deleteApplication: (id) => commit({ type: 'deleteApplication', id }),
+
+      addCv(name) {
+        const id = crypto.randomUUID()
+        const result = addCv(stateRef.current, { id, name })
+        if (!result.ok) return result
+        commit({ type: 'addCv', id, name })
+        return { ok: true, value: { id, name: name.trim() } }
+      },
+
+      markApplied(id, cvId) {
+        const before = stateRef.current
+        commit({ type: 'markApplied', id, cvId, now: nowIso() })
+        return stateRef.current !== before
+      },
+
+      markReplied(id) {
+        const current = stateRef.current.applications.find((a) => a.id === id)
+        if (current === undefined) return false
+        const result = markReplied(current, nowIso())
+        if (!result.ok) return false
+        commit({ type: 'replaceApplication', application: result.value })
+        return true
+      },
+
+      changeStatus(id, to, closedReason) {
+        const current = stateRef.current.applications.find((a) => a.id === id)
+        if (current === undefined) return { ok: false, error: 'unknown_application' }
+        const result = changeStatus(current, to, nowIso(), closedReason)
+        if (result.ok) commit({ type: 'replaceApplication', application: result.value })
+        return result
+      },
     }),
     [commit, persist, showState, showStatus, store],
   )

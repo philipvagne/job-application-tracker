@@ -73,6 +73,13 @@ describe('replyStatsByCv', () => {
     expect(replyStatsByCv(list, cvs).map((r) => r.applied)).toEqual([0, 0])
   })
 
+  it('handles applications without a CV', () => {
+    const { cvId: _removed, ...noCv } = app('x')
+    const { appliedAt: _applied, ...rest } = noCv
+    const toApply: Application = { ...rest, status: 'to_apply' }
+    expect(replyStatsByCv([noCv, toApply, app('y')], cvs).map((r) => r.applied)).toEqual([1, 0])
+  })
+
   it('counts closed applications that were applied', () => {
     const list = [app('1', { status: 'closed', closedReason: 'no_reply' })]
     expect(replyStatsByCv(list, cvs)[0]?.applied).toBe(1)

@@ -10,6 +10,7 @@ import {
   type Settings,
   type Status,
 } from './types'
+import { isHttpUrl } from './url'
 
 export const EXPORT_VERSION = 1
 
@@ -28,6 +29,7 @@ export type ImportErrorCode =
   | 'invalid_value'
   | 'empty_value'
   | 'invalid_date'
+  | 'invalid_url'
   | 'duplicate_id'
   | 'unknown_cv'
   | 'closed_reason_mismatch'
@@ -60,9 +62,9 @@ function copyApplication(a: Application): Application {
     role: a.role,
     url: a.url,
     status: a.status,
-    cvId: a.cvId,
     createdAt: a.createdAt,
   }
+  if (a.cvId !== undefined) copy.cvId = a.cvId
   if (a.closedReason !== undefined) copy.closedReason = a.closedReason
   if (a.appliedAt !== undefined) copy.appliedAt = a.appliedAt
   if (a.repliedAt !== undefined) copy.repliedAt = a.repliedAt
@@ -85,6 +87,7 @@ export function exportData(state: AppState): ExportFile {
 function copySettings(s: Settings): Settings {
   const copy: Settings = { reminderDays: s.reminderDays, language: s.language }
   if (s.lastExportAt !== undefined) copy.lastExportAt = s.lastExportAt
+  if (s.lastCvId !== undefined) copy.lastCvId = s.lastCvId
   return copy
 }
 
@@ -202,9 +205,15 @@ function validateApplications(
       else if (seen.has(id)) errors.push(error('duplicate_id', `${path}.id`, { id }))
       else seen.add(id)
     }
-    const company = text('company')
-    const role = text('role')
-    const url = text('url')
+    const company = text('company').trim()
+    if (typeof item['company'] === 'string' && company === '') {
+      errors.push(error('empty_value', `${path}.company`))
+    }
+    const role = text('role') // May be empty.
+    const url = text('url').trim() // May be empty; otherwise it must be an http(s) link.
+    if (typeof item['url'] === 'string' && url !== '' && !isHttpUrl(url)) {
+      errors.push(error('invalid_url', `${path}.url`))
+    }
 
     const status = item['status']
     if (status === undefined) {
@@ -223,9 +232,17 @@ function validateApplications(
       errors.push(error('closed_reason_mismatch', `${path}.closedReason`, { status: validStatus }))
     }
 
-    const cvId = text('cvId')
-    if (typeof item['cvId'] === 'string' && !cvIds.has(cvId)) {
-      errors.push(error('unknown_cv', `${path}.cvId`, { cvId }))
+    // A CV is needed once the application has been sent; before that it may be missing.
+    const rawCvId = item['cvId']
+    let cvId: string | undefined
+    if (rawCvId === undefined) {
+      if (item['appliedAt'] !== undefined) errors.push(error('missing_field', `${path}.cvId`))
+    } else if (typeof rawCvId !== 'string') {
+      errors.push(wrongType(`${path}.cvId`, 'string', rawCvId))
+    } else if (!cvIds.has(rawCvId)) {
+      errors.push(error('unknown_cv', `${path}.cvId`, { cvId: rawCvId }))
+    } else {
+      cvId = rawCvId
     }
 
     const createdAt = date('createdAt', true)
@@ -258,9 +275,9 @@ function validateApplications(
         role,
         url,
         status: validStatus as Status,
-        cvId,
         createdAt,
       }
+      if (cvId !== undefined) app.cvId = cvId
       if (closedReason !== undefined) app.closedReason = closedReason as ClosedReason
       if (appliedAt !== undefined) app.appliedAt = appliedAt
       if (repliedAt !== undefined) app.repliedAt = repliedAt
@@ -273,7 +290,11 @@ function validateApplications(
   return applications
 }
 
-function validateSettings(raw: unknown, errors: ImportError[]): Settings | null {
+function validateSettings(
+  raw: unknown,
+  cvIds: ReadonlySet<string>,
+  errors: ImportError[],
+): Settings | null {
   if (raw === undefined) {
     errors.push(error('missing_field', 'settings'))
     return null
@@ -283,7 +304,7 @@ function validateSettings(raw: unknown, errors: ImportError[]): Settings | null 
     return null
   }
   const before = errors.length
-  const { reminderDays, language, lastExportAt } = raw
+  const { reminderDays, language, lastExportAt, lastCvId } = raw
 
   if (reminderDays === undefined) {
     errors.push(error('missing_field', 'settings.reminderDays'))
@@ -307,9 +328,15 @@ function validateSettings(raw: unknown, errors: ImportError[]): Settings | null 
     errors.push(error('invalid_date', 'settings.lastExportAt'))
   }
 
+  if (lastCvId !== undefined) {
+    if (typeof lastCvId !== 'string') errors.push(wrongType('settings.lastCvId', 'string', lastCvId))
+    else if (!cvIds.has(lastCvId)) errors.push(error('unknown_cv', 'settings.lastCvId', { cvId: lastCvId }))
+  }
+
   if (errors.length > before) return null
   const settings: Settings = { reminderDays: reminderDays as number, language: language as Language }
   if (typeof lastExportAt === 'string') settings.lastExportAt = lastExportAt
+  if (typeof lastCvId === 'string') settings.lastCvId = lastCvId
   return settings
 }
 
@@ -337,12 +364,9 @@ export function importData(input: unknown): ImportResult {
 
     const errors: ImportError[] = []
     const cvs = validateCvs(input['cvs'], errors)
-    const applications = validateApplications(
-      input['applications'],
-      new Set(cvs.map((cv) => cv.id)),
-      errors,
-    )
-    const settings = validateSettings(input['settings'], errors)
+    const cvIds = new Set(cvs.map((cv) => cv.id))
+    const applications = validateApplications(input['applications'], cvIds, errors)
+    const settings = validateSettings(input['settings'], cvIds, errors)
 
     if (errors.length > 0 || settings === null) return { ok: false, errors }
     return { ok: true, state: { applications, cvs, settings } }

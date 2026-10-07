@@ -255,6 +255,53 @@ describe('importData rejects bad input without throwing', () => {
     ])
   })
 
+  it('does not need a CV before the application has been sent', () => {
+    expect(importData(mutateApp((a) => { delete a['cvId']; delete a['appliedAt']; delete a['repliedAt']; delete a['interviewAt'] })).ok).toBe(true)
+    expect(importData(mutateApp((a) => delete a['cvId'], 0)).ok).toBe(true)
+  })
+
+  it('needs a CV whenever appliedAt is present', () => {
+    expect(errorsOf(mutateApp((a) => delete a['cvId']))).toEqual([
+      { code: 'missing_field', path: 'applications[1].cvId' },
+    ])
+    expect(errorsOf(mutateApp((a) => { delete a['cvId']; a['appliedAt'] = '2026-10-01T08:00:00.000Z' }, 0))).toEqual([
+      { code: 'missing_field', path: 'applications[0].cvId' },
+    ])
+  })
+
+  it('checks a CV that is present even before the application has been sent', () => {
+    expect(errorsOf(mutateApp((a) => (a['cvId'] = 'nope'), 0))).toEqual([
+      { code: 'unknown_cv', path: 'applications[0].cvId', params: { cvId: 'nope' } },
+    ])
+    expect(errorsOf(mutateApp((a) => (a['cvId'] = 5), 0))).toEqual([
+      { code: 'wrong_type', path: 'applications[0].cvId', params: { expected: 'string', actual: 'number' } },
+    ])
+  })
+
+  it('accepts an empty role and an empty link', () => {
+    const r = importData(mutateApp((a) => { a['role'] = ''; a['url'] = '' }))
+    expect(r.ok && [r.state.applications[1]?.role, r.state.applications[1]?.url]).toEqual(['', ''])
+  })
+
+  it('rejects an empty or blank company', () => {
+    for (const company of ['', '   ']) {
+      expect(errorsOf(mutateApp((a) => (a['company'] = company)))).toEqual([
+        { code: 'empty_value', path: 'applications[1].company' },
+      ])
+    }
+  })
+
+  it('rejects links that are not http or https', () => {
+    for (const url of ['javascript:alert(1)', 'data:text/html,x', 'ftp://a.se', 'a.se', 'https://', 'https://a b.se']) {
+      expect(errorsOf(mutateApp((a) => (a['url'] = url)))).toEqual([
+        { code: 'invalid_url', path: 'applications[1].url' },
+      ])
+    }
+    expect(errorsOf(mutateApp((a) => (a['url'] = 7)))).toEqual([
+      { code: 'wrong_type', path: 'applications[1].url', params: { expected: 'string', actual: 'number' } },
+    ])
+  })
+
   it('rejects non-object applications and CVs', () => {
     const data = valid()
     data['applications'] = [null, 'x', 3]
@@ -336,6 +383,37 @@ describe('importData rejects bad input without throwing', () => {
   it('keeps markup in text as plain strings', () => {
     const r = importData(valid())
     expect(r.ok && r.state.applications[1]?.notes).toContain('<b>x</b>')
+  })
+})
+
+describe('settings.lastCvId', () => {
+  const withCv: AppState = { ...state, settings: { ...state.settings, lastCvId: 'cv2' } }
+
+  it('round-trips and is exported only when set', () => {
+    expect(importData(JSON.parse(JSON.stringify(exportData(withCv))))).toEqual({ ok: true, state: withCv })
+    expect('lastCvId' in exportData(state).settings).toBe(false)
+  })
+
+  it('must refer to an existing CV', () => {
+    const data = valid()
+    data['settings'] = { reminderDays: 14, language: 'sv', lastCvId: 'nope' }
+    expect(errorsOf(data)).toEqual([
+      { code: 'unknown_cv', path: 'settings.lastCvId', params: { cvId: 'nope' } },
+    ])
+  })
+
+  it('must be text', () => {
+    const data = valid()
+    data['settings'] = { reminderDays: 14, language: 'sv', lastCvId: 3 }
+    expect(errorsOf(data)).toEqual([
+      { code: 'wrong_type', path: 'settings.lastCvId', params: { expected: 'string', actual: 'number' } },
+    ])
+  })
+
+  it('is rejected when there are no CVs at all', () => {
+    const data: Record<string, unknown> = { ...valid(), cvs: [], applications: [] }
+    data['settings'] = { reminderDays: 14, language: 'sv', lastCvId: 'cv1' }
+    expect(errorsOf(data).map((e) => e.code)).toEqual(['unknown_cv'])
   })
 })
 

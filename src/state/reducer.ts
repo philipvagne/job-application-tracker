@@ -1,10 +1,29 @@
-import { markExported, resetState, setLanguage, setReminderDays, type AppState, type IsoDate, type Language } from '../domain'
+import {
+  addApplications,
+  addCv,
+  deleteApplication,
+  markApplicationApplied,
+  markExported,
+  replaceApplication,
+  resetState,
+  setLanguage,
+  setReminderDays,
+  type AppState,
+  type Application,
+  type IsoDate,
+  type Language,
+} from '../domain'
 
 export type Action =
   | { type: 'replace'; state: AppState }
   | { type: 'setLanguage'; language: Language }
   | { type: 'setReminderDays'; days: number }
   | { type: 'markExported'; now: IsoDate }
+  | { type: 'addApplications'; applications: Application[] }
+  | { type: 'replaceApplication'; application: Application }
+  | { type: 'deleteApplication'; id: string }
+  | { type: 'addCv'; id: string; name: string }
+  | { type: 'markApplied'; id: string; cvId: string; now: IsoDate }
   | { type: 'reset' }
 
 /**
@@ -21,6 +40,20 @@ export function reducer(state: AppState, action: Action): AppState {
       return setReminderDays(state, action.days)
     case 'markExported':
       return markExported(state, action.now)
+    case 'addApplications':
+      return addApplications(state, action.applications)
+    case 'replaceApplication':
+      return replaceApplication(state, action.application)
+    case 'deleteApplication':
+      return deleteApplication(state, action.id)
+    case 'addCv': {
+      const result = addCv(state, { id: action.id, name: action.name })
+      return result.ok ? result.value : state
+    }
+    case 'markApplied': {
+      const result = markApplicationApplied(state, action.id, action.cvId, action.now)
+      return result.ok ? result.value : state
+    }
     case 'reset':
       return resetState(state)
   }

@@ -88,6 +88,113 @@
       "button": "Yes, delete everything"
     }
   },
+  "field": {
+    "company": "Company",
+    "role": "Role",
+    "link": "Link",
+    "notes": "Notes",
+    "companyRequired": "Enter a company name.",
+    "linkInvalid": "Enter a link that starts with http:// or https://."
+  },
+  "quickAdd": {
+    "title": "Add a job",
+    "add": "Add",
+    "added": "Added: {company}"
+  },
+  "paste": {
+    "summary": "Paste several links",
+    "label": "One link or job title per line",
+    "hint": "Up to 200 lines. Blank lines are ignored.",
+    "add": "Add all",
+    "empty": "Paste at least one line first.",
+    "result": "Added: {added}. Skipped lines: {skipped}."
+  },
+  "cv": {
+    "label": "CV for the next application",
+    "choose": "Choose a CV",
+    "addOption": "Add a CV",
+    "nameLabel": "CV name",
+    "save": "Save CV",
+    "saveAndApply": "Save and mark as applied",
+    "firstPrompt": "Which CV are you using? Give it a name. Next time you can pick it from a list.",
+    "none": "You'll be asked to name a CV when you mark your first application as applied.",
+    "required": "Choose a CV first.",
+    "nameRequired": "Enter a name for the CV.",
+    "nameTaken": "You already have a CV with that name."
+  },
+  "tracker": {
+    "week": {
+      "one": "{count} application this week",
+      "other": "{count} applications this week"
+    },
+    "toApply": {
+      "title": "To apply",
+      "empty": "Nothing waiting. Add a job above."
+    },
+    "applied": {
+      "title": "Applied",
+      "empty": "Applications you mark as applied will show up here."
+    },
+    "closed": {
+      "title": "Closed ({count})"
+    }
+  },
+  "status": {
+    "to_apply": "To apply",
+    "applied": "Applied",
+    "interview": "Interview",
+    "offer": "Offer"
+  },
+  "closedReason": {
+    "no_reply": "No reply",
+    "declined": "Declined",
+    "withdrawn": "Withdrawn"
+  },
+  "row": {
+    "actionFor": "{action}: {company}",
+    "markApplied": "Applied",
+    "appliedWhen": "Applied {when}",
+    "cvName": "CV: {name}",
+    "linkOpens": "{host} (opens in a new tab)",
+    "more": "More",
+    "closedWithReason": "Closed: {reason}"
+  },
+  "menu": {
+    "reply": "Got a reply",
+    "toInterview": "Move to Interview",
+    "toOffer": "Move to Offer",
+    "back": "Move back",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "reopen": "Reopen"
+  },
+  "announce": {
+    "markedApplied": "Marked as applied: {company}",
+    "movedTo": "Moved to {status}: {company}",
+    "replied": "Reply noted: {company}",
+    "closed": "Closed: {company}",
+    "reopened": "Reopened: {company}",
+    "saved": "Saved: {company}",
+    "deleted": "Deleted: {company}"
+  },
+  "editApp": {
+    "title": "Edit application",
+    "save": "Save"
+  },
+  "confirmApp": {
+    "close": {
+      "title": "Close this application?",
+      "body": "{company} will move to Closed. You can reopen it later.",
+      "reason": "Reason",
+      "button": "Close application"
+    },
+    "delete": {
+      "title": "Delete this application?",
+      "body": "{company} will be removed from your list. This can't be undone.",
+      "button": "Delete application"
+    }
+  },
   "typeNames": {
     "array": "a list",
     "object": "an object",
@@ -121,7 +228,8 @@
       "notes": "notes",
       "reminderDays": "reminder days",
       "language": "language",
-      "lastExportAt": "last export date"
+      "lastExportAt": "last export date",
+      "lastCvId": "last used CV"
     }
   },
   "importErrors": {
@@ -132,6 +240,7 @@
     "invalid_value": "{path}: this value isn't allowed. Allowed values: {allowed}.",
     "empty_value": "{path}: this value can't be empty.",
     "invalid_date": "{path}: this isn't a valid date.",
+    "invalid_url": "{path}: this isn't a link starting with http:// or https://.",
     "duplicate_id": "{path}: the id “{id}” is used more than once.",
     "unknown_cv": "{path}: refers to a CV that isn't in the backup (“{cvId}”).",
     "closed_reason_mismatch": "{path}: the closing reason doesn't match the status “{status}”.",

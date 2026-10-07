@@ -1,0 +1,381 @@
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import {
+  CLOSED_REASONS,
+  applicationsThisWeek,
+  type Application,
+  type ClosedReason,
+  type CvError,
+  type Status,
+} from '../domain'
+import { useApp } from '../state/AppContext'
+import { AppliedRow, ClosedRow, ToApplyRow } from './ApplicationRows'
+import { ConfirmDialog } from './ConfirmDialog'
+import { EditDialog } from './EditDialog'
+import { COMPANY_FIELD_ID, QuickAdd } from './QuickAdd'
+import type { MenuAction } from './RowMenu'
+
+const ADD_CV = '__add_cv__'
+
+type Confirm = { kind: 'close' | 'delete'; application: Application } | null
+
+/** Quick add, the CV choice, the three lists and every dialog they open. */
+export function Tracker() {
+  const { t, language, state, actions } = useApp()
+  const { applications, cvs, settings } = state
+
+  const cvSelectId = useId()
+  const cvErrorId = useId()
+  const cvNameId = useId()
+  const cvNameErrorId = useId()
+  const reasonId = useId()
+  const cvSelectRef = useRef<HTMLSelectElement>(null)
+  const cvNameRef = useRef<HTMLInputElement>(null)
+
+  const [message, setMessage] = useState('')
+  const [pickedCvId, setPickedCvId] = useState('')
+  const [cvSelectError, setCvSelectError] = useState(false)
+  // The inline CV form. `applyId` is the application waiting for a first CV, if any.
+  const [cvForm, setCvForm] = useState<{ applyId: string | null } | null>(null)
+  const [cvName, setCvName] = useState('')
+  const [cvNameError, setCvNameError] = useState<CvError | null>(null)
+  const [editing, setEditing] = useState<Application | null>(null)
+  const [confirm, setConfirm] = useState<Confirm>(null)
+  const [closeReason, setCloseReason] = useState<ClosedReason>('no_reply')
+  // DOM ids to try, in order, once the next render is done.
+  const [focusIds, setFocusIds] = useState<string[]>([])
+
+  const now = new Date().toISOString()
+
+  const toApply = applications.filter((a) => a.status === 'to_apply')
+  const applied = applications.filter((a) => a.status === 'applied' || a.status === 'interview' || a.status === 'offer')
+  const closed = applications.filter((a) => a.status === 'closed')
+  const weekCount = applicationsThisWeek(applications, now)
+
+  // The CV in the picker: the one chosen, else the last one used, if it still exists.
+  const hasCv = (id: string): boolean => cvs.some((cv) => cv.id === id)
+  const cvId = hasCv(pickedCvId) ? pickedCvId : settings.lastCvId !== undefined && hasCv(settings.lastCvId) ? settings.lastCvId : ''
+
+  useEffect(() => {
+    if (focusIds.length === 0) return
+    for (const id of focusIds) {
+      const element = document.getElementById(id)
+      if (element !== null) {
+        element.focus()
+        break
+      }
+    }
+    setFocusIds([])
+  }, [focusIds])
+
+  useEffect(() => {
+    if (cvForm !== null) cvNameRef.current?.focus()
+  }, [cvForm])
+
+  useEffect(() => {
+    if (message === '') return
+    const timer = window.setTimeout(() => setMessage(''), 6000)
+    return () => window.clearTimeout(timer)
+  }, [message])
+
+  /** Where focus goes when a row leaves its list: the neighbour's button, else the Company field. */
+  function neighbourIds(list: Application[], application: Application, idOf: (a: Application) => string): string[] {
+    const i = list.findIndex((a) => a.id === application.id)
+    const ids = [list[i + 1], list[i - 1]].filter((a): a is Application => a !== undefined).map(idOf)
+    return [...ids, COMPANY_FIELD_ID]
+  }
+
+  function applyNow(application: Application, chosenCvId: string): void {
+    const next = neighbourIds(toApply, application, (a) => `apply-${a.id}`)
+    if (!actions.markApplied(application.id, chosenCvId)) return
+    setMessage(t('announce.markedApplied', { company: application.company }))
+    setFocusIds(next)
+  }
+
+  function onApplied(application: Application): void {
+    if (cvs.length === 0) {
+      setCvName('')
+      setCvNameError(null)
+      setCvForm({ applyId: application.id })
+      return
+    }
+    if (cvId === '') {
+      setCvSelectError(true)
+      cvSelectRef.current?.focus()
+      return
+    }
+    applyNow(application, cvId)
+  }
+
+  function onCvSelect(value: string): void {
+    setCvSelectError(false)
+    if (value === ADD_CV) {
+      setCvName('')
+      setCvNameError(null)
+      setCvForm({ applyId: null })
+      return
+    }
+    setPickedCvId(value)
+  }
+
+  function onCvSubmit(event: FormEvent): void {
+    event.preventDefault()
+    const pending = cvForm?.applyId ?? null
+    const result = actions.addCv(cvName)
+    if (!result.ok) {
+      setCvNameError(result.error === 'duplicate_id' ? 'name_taken' : result.error)
+      cvNameRef.current?.focus()
+      return
+    }
+    setPickedCvId(result.value.id)
+    setCvSelectError(false)
+    setCvForm(null)
+    setCvNameError(null)
+    const waiting = pending === null ? undefined : applications.find((a) => a.id === pending)
+    if (waiting !== undefined) applyNow(waiting, result.value.id)
+    else setFocusIds([cvSelectId])
+  }
+
+  function cancelCvForm(): void {
+    const pending = cvForm?.applyId ?? null
+    setCvForm(null)
+    setCvNameError(null)
+    setFocusIds(pending === null ? [cvSelectId] : [`apply-${pending}`])
+  }
+
+  function moveTo(application: Application, to: Exclude<Status, 'closed'>): void {
+    const result = actions.changeStatus(application.id, to)
+    if (!result.ok) return
+    setMessage(t('announce.movedTo', { status: t(`status.${to}`), company: application.company }))
+    setFocusIds([`more-${application.id}`])
+  }
+
+  function onMenu(application: Application, action: MenuAction): void {
+    switch (action) {
+      case 'reply':
+        if (actions.markReplied(application.id)) {
+          setMessage(t('announce.replied', { company: application.company }))
+        }
+        setFocusIds([`more-${application.id}`])
+        return
+      case 'toInterview':
+        moveTo(application, 'interview')
+        return
+      case 'toOffer':
+        moveTo(application, 'offer')
+        return
+      case 'back':
+        moveTo(application, application.status === 'offer' ? 'interview' : application.status === 'interview' ? 'applied' : 'to_apply')
+        return
+      case 'close':
+        setCloseReason('no_reply')
+        setConfirm({ kind: 'close', application })
+        return
+      case 'edit':
+        setEditing(application)
+        return
+      case 'delete':
+        setConfirm({ kind: 'delete', application })
+        return
+    }
+  }
+
+  function confirmAction(): void {
+    if (confirm === null) return
+    const { kind, application } = confirm
+    setConfirm(null)
+    if (kind === 'delete') {
+      const list = application.status === 'to_apply' ? toApply : application.status === 'closed' ? closed : applied
+      const idOf =
+        application.status === 'to_apply'
+          ? (a: Application) => `apply-${a.id}`
+          : application.status === 'closed'
+            ? (a: Application) => `reopen-${a.id}`
+            : (a: Application) => `more-${a.id}`
+      const next = neighbourIds(list, application, idOf)
+      actions.deleteApplication(application.id)
+      setMessage(t('announce.deleted', { company: application.company }))
+      setFocusIds(next)
+      return
+    }
+    const result = actions.changeStatus(application.id, 'closed', closeReason)
+    if (!result.ok) return
+    setMessage(t('announce.closed', { company: application.company }))
+    setFocusIds(['closed-summary', ...neighbourIds(applied, application, (a) => `more-${a.id}`)])
+  }
+
+  function onReopen(application: Application): void {
+    const to: Status = application.appliedAt !== undefined ? 'applied' : 'to_apply'
+    const next = neighbourIds(closed, application, (a) => `reopen-${a.id}`)
+    const result = actions.changeStatus(application.id, to)
+    if (!result.ok) return
+    setMessage(t('announce.reopened', { company: application.company }))
+    setFocusIds([to === 'applied' ? `more-${application.id}` : `apply-${application.id}`, ...next])
+  }
+
+  const weekText = t(new Intl.PluralRules(language).select(weekCount) === 'one' ? 'tracker.week.one' : 'tracker.week.other', {
+    count: weekCount,
+  })
+  const cvNameErrorText =
+    cvNameError === 'name_taken' ? t('cv.nameTaken') : cvNameError === null ? '' : t('cv.nameRequired')
+
+  return (
+    <div className="tracker">
+      <p role="status" className="note tracker__status">
+        {message}
+      </p>
+
+      <QuickAdd onAnnounce={setMessage} />
+
+      <p className="week">{weekText}</p>
+
+      {applications.length === 0 ? (
+        <section className="empty" aria-labelledby="empty-title">
+          <h2 id="empty-title">{t('empty.title')}</h2>
+          <p>{t('empty.body')}</p>
+        </section>
+      ) : (
+        <>
+          <section className="cv-picker" aria-label={t('cv.label')}>
+            {cvs.length > 0 ? (
+              <div className="field">
+                <label htmlFor={cvSelectId}>{t('cv.label')}</label>
+                <select
+                  id={cvSelectId}
+                  ref={cvSelectRef}
+                  className="input input--select"
+                  value={cvId}
+                  onChange={(e) => onCvSelect(e.target.value)}
+                  aria-invalid={cvSelectError}
+                  aria-describedby={cvSelectError ? cvErrorId : undefined}
+                >
+                  {cvId === '' && <option value="">{t('cv.choose')}</option>}
+                  {cvs.map((cv) => (
+                    <option key={cv.id} value={cv.id}>
+                      {cv.name}
+                    </option>
+                  ))}
+                  <option value={ADD_CV}>{t('cv.addOption')}</option>
+                </select>
+                <p id={cvErrorId} className="error">
+                  {cvSelectError ? t('cv.required') : ''}
+                </p>
+              </div>
+            ) : (
+              cvForm === null && <p className="hint">{t('cv.none')}</p>
+            )}
+
+            {cvForm !== null && (
+              <form className="cv-form" onSubmit={onCvSubmit} noValidate>
+                {cvForm.applyId !== null && cvs.length === 0 && <p>{t('cv.firstPrompt')}</p>}
+                <div className="field">
+                  <label htmlFor={cvNameId}>{t('cv.nameLabel')}</label>
+                  <input
+                    id={cvNameId}
+                    ref={cvNameRef}
+                    className="input"
+                    type="text"
+                    autoComplete="off"
+                    value={cvName}
+                    onChange={(e) => setCvName(e.target.value)}
+                    aria-invalid={cvNameError !== null}
+                    aria-describedby={cvNameError !== null ? cvNameErrorId : undefined}
+                  />
+                  <p id={cvNameErrorId} className="error">
+                    {cvNameErrorText}
+                  </p>
+                </div>
+                <div className="cv-form__actions">
+                  <button type="submit" className="btn btn--primary">
+                    {cvForm.applyId !== null ? t('cv.saveAndApply') : t('cv.save')}
+                  </button>
+                  <button type="button" className="btn" onClick={cancelCvForm}>
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+
+          <section className="list-section" aria-labelledby="to-apply-title">
+            <h2 id="to-apply-title">{t('tracker.toApply.title')}</h2>
+            {toApply.length === 0 ? (
+              <p className="hint">{t('tracker.toApply.empty')}</p>
+            ) : (
+              <ul className="rows">
+                {toApply.map((a) => (
+                  <ToApplyRow key={a.id} application={a} onApplied={() => onApplied(a)} onMenu={(action) => onMenu(a, action)} />
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="list-section" aria-labelledby="applied-title">
+            <h2 id="applied-title">{t('tracker.applied.title')}</h2>
+            {applied.length === 0 ? (
+              <p className="hint">{t('tracker.applied.empty')}</p>
+            ) : (
+              <ul className="rows">
+                {applied.map((a) => (
+                  <AppliedRow key={a.id} application={a} cvs={cvs} now={now} onMenu={(action) => onMenu(a, action)} />
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {closed.length > 0 && (
+            <details className="closed">
+              <summary id="closed-summary" className="closed__summary">
+                {t('tracker.closed.title', { count: closed.length })}
+              </summary>
+              <ul className="rows">
+                {closed.map((a) => (
+                  <ClosedRow key={a.id} application={a} onReopen={() => onReopen(a)} onMenu={(action) => onMenu(a, action)} />
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+
+      <EditDialog
+        application={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(company) => setMessage(t('announce.saved', { company }))}
+      />
+
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.kind === 'delete' ? t('confirmApp.delete.title') : t('confirmApp.close.title')}
+        body={
+          confirm === null
+            ? ''
+            : t(confirm.kind === 'delete' ? 'confirmApp.delete.body' : 'confirmApp.close.body', {
+                company: confirm.application.company,
+              })
+        }
+        confirmLabel={confirm?.kind === 'delete' ? t('confirmApp.delete.button') : t('confirmApp.close.button')}
+        danger
+        onConfirm={confirmAction}
+        onCancel={() => setConfirm(null)}
+      >
+        {confirm?.kind === 'close' && (
+          <div className="field">
+            <label htmlFor={reasonId}>{t('confirmApp.close.reason')}</label>
+            <select
+              id={reasonId}
+              className="input input--select"
+              value={closeReason}
+              onChange={(e) => setCloseReason(CLOSED_REASONS.find((r) => r === e.target.value) ?? 'no_reply')}
+            >
+              {CLOSED_REASONS.map((reason) => (
+                <option key={reason} value={reason}>
+                  {t(`closedReason.${reason}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </ConfirmDialog>
+    </div>
+  )
+}

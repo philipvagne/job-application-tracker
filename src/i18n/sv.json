@@ -88,6 +88,113 @@
       "button": "Ja, radera allt"
     }
   },
+  "field": {
+    "company": "Företag",
+    "role": "Roll",
+    "link": "Länk",
+    "notes": "Anteckningar",
+    "companyRequired": "Ange ett företagsnamn.",
+    "linkInvalid": "Ange en länk som börjar med http:// eller https://."
+  },
+  "quickAdd": {
+    "title": "Lägg till ett jobb",
+    "add": "Lägg till",
+    "added": "Tillagd: {company}"
+  },
+  "paste": {
+    "summary": "Klistra in flera länkar",
+    "label": "En länk eller jobbtitel per rad",
+    "hint": "Högst 200 rader. Tomma rader hoppas över.",
+    "add": "Lägg till alla",
+    "empty": "Klistra in minst en rad först.",
+    "result": "Tillagda: {added}. Överhoppade rader: {skipped}."
+  },
+  "cv": {
+    "label": "CV för nästa ansökan",
+    "choose": "Välj ett CV",
+    "addOption": "Lägg till ett CV",
+    "nameLabel": "CV-namn",
+    "save": "Spara CV",
+    "saveAndApply": "Spara och markera som sökt",
+    "firstPrompt": "Vilket CV använder du? Ge det ett namn. Nästa gång väljer du det i en lista.",
+    "none": "Du får ge ett CV ett namn när du markerar din första ansökan som sökt.",
+    "required": "Välj ett CV först.",
+    "nameRequired": "Ange ett namn på CV:t.",
+    "nameTaken": "Du har redan ett CV med det namnet."
+  },
+  "tracker": {
+    "week": {
+      "one": "{count} ansökan den här veckan",
+      "other": "{count} ansökningar den här veckan"
+    },
+    "toApply": {
+      "title": "Att söka",
+      "empty": "Inget väntar. Lägg till ett jobb ovan."
+    },
+    "applied": {
+      "title": "Sökta",
+      "empty": "Ansökningar du markerar som sökta visas här."
+    },
+    "closed": {
+      "title": "Avslutade ({count})"
+    }
+  },
+  "status": {
+    "to_apply": "Att söka",
+    "applied": "Sökt",
+    "interview": "Intervju",
+    "offer": "Erbjudande"
+  },
+  "closedReason": {
+    "no_reply": "Inget svar",
+    "declined": "Tackat nej",
+    "withdrawn": "Återkallad"
+  },
+  "row": {
+    "actionFor": "{action}: {company}",
+    "markApplied": "Sökt",
+    "appliedWhen": "Sökt {when}",
+    "cvName": "CV: {name}",
+    "linkOpens": "{host} (öppnas i en ny flik)",
+    "more": "Mer",
+    "closedWithReason": "Avslutad: {reason}"
+  },
+  "menu": {
+    "reply": "Fått svar",
+    "toInterview": "Flytta till Intervju",
+    "toOffer": "Flytta till Erbjudande",
+    "back": "Flytta tillbaka",
+    "close": "Avsluta",
+    "edit": "Redigera",
+    "delete": "Ta bort",
+    "reopen": "Öppna igen"
+  },
+  "announce": {
+    "markedApplied": "Markerad som sökt: {company}",
+    "movedTo": "Flyttad till {status}: {company}",
+    "replied": "Svar noterat: {company}",
+    "closed": "Avslutad: {company}",
+    "reopened": "Öppnad igen: {company}",
+    "saved": "Sparad: {company}",
+    "deleted": "Borttagen: {company}"
+  },
+  "editApp": {
+    "title": "Redigera ansökan",
+    "save": "Spara"
+  },
+  "confirmApp": {
+    "close": {
+      "title": "Avsluta den här ansökan?",
+      "body": "{company} flyttas till Avslutade. Du kan öppna den igen senare.",
+      "reason": "Orsak",
+      "button": "Avsluta ansökan"
+    },
+    "delete": {
+      "title": "Ta bort den här ansökan?",
+      "body": "{company} tas bort från din lista. Det går inte att ångra.",
+      "button": "Ta bort ansökan"
+    }
+  },
   "typeNames": {
     "array": "en lista",
     "object": "ett objekt",
@@ -121,7 +228,8 @@
       "notes": "anteckningar",
       "reminderDays": "dagar till påminnelse",
       "language": "språk",
-      "lastExportAt": "senaste export"
+      "lastExportAt": "senaste export",
+      "lastCvId": "senast använda CV"
     }
   },
   "importErrors": {
@@ -132,6 +240,7 @@
     "invalid_value": "{path}: värdet är inte tillåtet. Tillåtna värden: {allowed}.",
     "empty_value": "{path}: värdet får inte vara tomt.",
     "invalid_date": "{path}: det här är inte ett giltigt datum.",
+    "invalid_url": "{path}: det här är inte en länk som börjar med http:// eller https://.",
     "duplicate_id": "{path}: id:t “{id}” används mer än en gång.",
     "unknown_cv": "{path}: hänvisar till ett CV som inte finns i säkerhetskopian (“{cvId}”).",
     "closed_reason_mismatch": "{path}: orsaken till avslutet stämmer inte med statusen “{status}”.",

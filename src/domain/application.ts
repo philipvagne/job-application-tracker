@@ -1,11 +1,12 @@
 import type { Application, ClosedReason, IsoDate, Result, Status } from './types'
+import { isHttpUrl } from './url'
 
 export interface NewApplicationInput {
   id: string
   company: string
   role: string
   url: string
-  cvId: string
+  cvId?: string
   notes?: string
 }
 
@@ -14,7 +15,30 @@ export type TransitionError =
   | 'invalid_transition'
   | 'closed_reason_required'
   | 'not_applied'
+  | 'cv_required'
 
+export type ApplicationFieldError = 'company_required' | 'invalid_url'
+
+export interface ApplicationChanges {
+  company?: string
+  role?: string
+  url?: string
+  notes?: string
+}
+
+/** Trims the text fields and returns what is wrong with them. Role may be empty; so may the link. */
+export function validateApplicationFields(fields: {
+  company: string
+  url: string
+}): ApplicationFieldError[] {
+  const errors: ApplicationFieldError[] = []
+  if (fields.company.trim() === '') errors.push('company_required')
+  const url = fields.url.trim()
+  if (url !== '' && !isHttpUrl(url)) errors.push('invalid_url')
+  return errors
+}
+
+/** Builds a to_apply application without checking the fields; see newApplication. */
 export function createApplication(input: NewApplicationInput, now: IsoDate): Application {
   const application: Application = {
     id: input.id,
@@ -22,11 +46,43 @@ export function createApplication(input: NewApplicationInput, now: IsoDate): App
     role: input.role.trim(),
     url: input.url.trim(),
     status: 'to_apply',
-    cvId: input.cvId,
     createdAt: now,
   }
+  if (input.cvId !== undefined) application.cvId = input.cvId
   if (input.notes !== undefined) application.notes = input.notes
   return application
+}
+
+/** Like createApplication, but checks company and link first. */
+export function newApplication(
+  input: NewApplicationInput,
+  now: IsoDate,
+): Result<Application, ApplicationFieldError[]> {
+  const errors = validateApplicationFields(input)
+  if (errors.length > 0) return { ok: false, error: errors }
+  return { ok: true, value: createApplication(input, now) }
+}
+
+/**
+ * Edits company, role, link and notes. Company must not be empty after trimming, and a
+ * link, if there is one, must be http or https. Fields left out stay as they are; empty
+ * notes are removed.
+ */
+export function updateApplication(
+  application: Application,
+  changes: ApplicationChanges,
+): Result<Application, ApplicationFieldError[]> {
+  const company = (changes.company ?? application.company).trim()
+  const role = (changes.role ?? application.role).trim()
+  const url = (changes.url ?? application.url).trim()
+  const errors = validateApplicationFields({ company, url })
+  if (errors.length > 0) return { ok: false, error: errors }
+
+  const { notes: _notes, ...rest } = application
+  const next: Application = { ...rest, company, role, url }
+  const notes = changes.notes ?? application.notes
+  if (notes !== undefined && notes.trim() !== '') next.notes = notes
+  return { ok: true, value: next }
 }
 
 /** Moves a to-apply application to applied, recording the date and the CV used. */
@@ -79,15 +135,25 @@ function withoutApplied(application: Application): Application {
  * - Reaching applied, interview or offer fills appliedAt if missing. Reaching
  *   interview or offer also fills repliedAt and interviewAt if missing, and offer
  *   fills offerAt. interviewAt and offerAt are never cleared.
+ * - A result that has appliedAt needs a CV: `cvId` if given, else the one the
+ *   application already has, else the error cv_required.
  */
 export function changeStatus(
   application: Application,
   to: Status,
   now: IsoDate,
   closedReason?: ClosedReason,
+  cvId?: string,
 ): Result<Application, TransitionError> {
   const from = application.status
   if (from === to) return { ok: false, error: 'same_status' }
+
+  const withCv = (next: Application): Result<Application, TransitionError> => {
+    const chosen = cvId !== undefined && cvId !== '' ? cvId : next.cvId
+    if (next.appliedAt === undefined) return { ok: true, value: next }
+    if (chosen === undefined) return { ok: false, error: 'cv_required' }
+    return { ok: true, value: { ...next, cvId: chosen } }
+  }
 
   if (to === 'closed') {
     if (closedReason === undefined) return { ok: false, error: 'closed_reason_required' }
@@ -97,7 +163,7 @@ export function changeStatus(
   if (from === 'closed') {
     const reopenTo: Status = application.appliedAt !== undefined ? 'applied' : 'to_apply'
     if (to !== reopenTo) return { ok: false, error: 'invalid_transition' }
-    return { ok: true, value: { ...withoutClosedReason(application), status: reopenTo } }
+    return withCv({ ...withoutClosedReason(application), status: reopenTo })
   }
 
   if (!ALLOWED[from].includes(to)) return { ok: false, error: 'invalid_transition' }
@@ -113,5 +179,5 @@ export function changeStatus(
     next.interviewAt ??= now
   }
   if (to === 'offer') next.offerAt ??= now
-  return { ok: true, value: next }
+  return withCv(next)
 }

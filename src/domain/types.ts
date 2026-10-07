@@ -17,7 +17,8 @@ export interface Application {
   url: string
   status: Status
   closedReason?: ClosedReason
-  cvId: string
+  /** The CV used. Present whenever appliedAt is; may be missing before the first application. */
+  cvId?: string
   createdAt: IsoDate
   appliedAt?: IsoDate
   repliedAt?: IsoDate
@@ -38,6 +39,8 @@ export interface Settings {
   language: Language
   /** When the user last exported a backup. Absent if they never have. */
   lastExportAt?: IsoDate
+  /** The CV used for the latest application. Must be an existing CV when present. */
+  lastCvId?: string
 }
 
 export interface AppState {
