@@ -30,11 +30,15 @@ interface EditFormProps {
 }
 
 function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
-  const { t, actions } = useApp()
+  const { t, state, fileStatus, actions } = useApp()
   const companyId = useId()
   const roleId = useId()
   const linkId = useId()
   const notesId = useId()
+  const toldId = useId()
+  const toldHintId = useId()
+  const cvSelectId = useId()
+  const cvStatusId = useId()
   const companyErrorId = useId()
   const linkErrorId = useId()
 
@@ -42,18 +46,31 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
   const [role, setRole] = useState(application.role)
   const [link, setLink] = useState(application.url)
   const [notes, setNotes] = useState(application.notes ?? '')
+  const [toldThem, setToldThem] = useState(application.toldThem ?? '')
+  const [cvId, setCvId] = useState(application.cvId ?? '')
   const [errors, setErrors] = useState<ApplicationFieldError[]>([])
 
   const companyInvalid = errors.includes('company_required')
   const linkInvalid = errors.includes('invalid_url')
+  const chosenCv = state.cvs.find((cv) => cv.id === cvId)
+  const chosenStatus = chosenCv === undefined ? null : fileStatus(chosenCv)
+  const cvStatusText =
+    chosenCv === undefined
+      ? ''
+      : chosenCv.file === undefined
+        ? t('cvFile.noFile')
+        : chosenStatus === 'missing'
+          ? t('cvFile.missing')
+          : ''
 
   function onSubmit(event: FormEvent): void {
     event.preventDefault()
-    const result = actions.editApplication(application.id, { company, role, url: link, notes })
+    const result = actions.editApplication(application.id, { company, role, url: link, notes, toldThem })
     if (!result.ok) {
       setErrors(result.error)
       return
     }
+    if (cvId !== (application.cvId ?? '')) actions.linkCv(application.id, cvId === '' ? null : cvId)
     onSaved(result.value.company)
     onClose()
   }
@@ -107,6 +124,40 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
         />
         <p id={linkErrorId} className="error">
           {linkInvalid ? t('field.linkInvalid') : ''}
+        </p>
+      </div>
+      <div className="field">
+        <label htmlFor={cvSelectId}>{t('editApp.cv')}</label>
+        <select
+          id={cvSelectId}
+          className="input input--select"
+          value={cvId}
+          onChange={(e) => setCvId(e.target.value)}
+          aria-describedby={cvStatusText === '' ? undefined : cvStatusId}
+        >
+          {application.appliedAt === undefined && <option value="">{t('editApp.noCv')}</option>}
+          {state.cvs.map((cv) => (
+            <option key={cv.id} value={cv.id}>
+              {cv.name}
+            </option>
+          ))}
+        </select>
+        <p id={cvStatusId} className="hint">
+          {cvStatusText}
+        </p>
+      </div>
+      <div className="field">
+        <label htmlFor={toldId}>{t('field.toldThem')}</label>
+        <textarea
+          id={toldId}
+          className="input input--area"
+          rows={4}
+          value={toldThem}
+          onChange={(e) => setToldThem(e.target.value)}
+          aria-describedby={toldHintId}
+        />
+        <p id={toldHintId} className="hint">
+          {t('field.toldThemHint')}
         </p>
       </div>
       <div className="field">

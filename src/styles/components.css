@@ -473,3 +473,15 @@
     flex: 1 1 auto;
   }
 }
+
+.btn--small {
+  min-height: 1.75rem;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 40rem) {
+  .btn--small {
+    min-height: var(--target-size);
+  }
+}

@@ -3,6 +3,7 @@ import {
   addApplications,
   addCv,
   deleteApplication,
+  linkCv,
   markApplicationApplied,
   replaceApplication,
 } from './collection'
@@ -122,5 +123,90 @@ describe('markApplicationApplied', () => {
     const r = markApplicationApplied(before, 'a1', 'zzz', T1)
     expect(r.ok).toBe(false)
     expect(before.settings.lastCvId).toBeUndefined()
+  })
+})
+
+describe('addCv with a file', () => {
+  const file = { fileName: 'cv.pdf', size: 1234, type: 'application/pdf' as const }
+
+  it('stores the file details and createdAt, trimming the name', () => {
+    const r = addCv(state(), { id: 'cv2', name: ' Long ', file, now: T1 })
+    expect(r.ok && r.value.cvs[1]).toEqual({ id: 'cv2', name: 'Long', createdAt: T1, file })
+  })
+
+  it('leaves file and createdAt out when not given', () => {
+    const r = addCv(state(), { id: 'cv2', name: 'Long' })
+    expect(r.ok && Object.keys(r.value.cvs[1] ?? {})).toEqual(['id', 'name'])
+  })
+
+  it('copies the file details, so later changes to the input do not leak in', () => {
+    const mutable = { ...file }
+    const r = addCv(state(), { id: 'cv2', name: 'Long', file: mutable })
+    mutable.size = 1
+    expect(r.ok && r.value.cvs[1]?.file?.size).toBe(1234)
+  })
+
+  it('checks the name before anything else, even with a file', () => {
+    expect(addCv(state(), { id: 'cv2', name: 'SHORT', file })).toEqual({ ok: false, error: 'name_taken' })
+    expect(addCv(state(), { id: 'cv2', name: ' ', file })).toEqual({ ok: false, error: 'name_required' })
+  })
+
+  it('has no way to change an entry afterwards: the same id is refused', () => {
+    const first = addCv(state(), { id: 'cv2', name: 'Long', file })
+    if (!first.ok) throw new Error('setup failed')
+    expect(addCv(first.value, { id: 'cv2', name: 'Longer', file })).toEqual({ ok: false, error: 'duplicate_id' })
+  })
+})
+
+describe('linkCv', () => {
+  const applied = app('a3', { status: 'applied', cvId: 'cv1', appliedAt: T0 })
+  const two = (): AppState =>
+    state({
+      applications: [app('a1'), applied],
+      cvs: [
+        { id: 'cv1', name: 'Short' },
+        { id: 'cv2', name: 'Long' },
+      ],
+    })
+
+  it('links a to-apply application to a CV', () => {
+    const r = linkCv(two(), 'a1', 'cv2')
+    expect(r.ok && r.value.applications[0]?.cvId).toBe('cv2')
+  })
+
+  it('changes the CV of an applied application', () => {
+    const r = linkCv(two(), 'a3', 'cv2')
+    expect(r.ok && r.value.applications[1]).toEqual({ ...applied, cvId: 'cv2' })
+  })
+
+  it('returns the same state when nothing changes', () => {
+    const before = two()
+    const r = linkCv(before, 'a3', 'cv1')
+    expect(r.ok && r.value).toBe(before)
+    const none = linkCv(before, 'a1', null)
+    expect(none.ok && none.value).toBe(before)
+  })
+
+  it('removes the link from a to-apply application', () => {
+    const before = two()
+    const linked = linkCv(before, 'a1', 'cv1')
+    if (!linked.ok) throw new Error('setup failed')
+    const r = linkCv(linked.value, 'a1', null)
+    expect(r.ok && 'cvId' in (r.value.applications[0] ?? {})).toBe(false)
+  })
+
+  it('refuses to remove the CV of an application that was sent', () => {
+    expect(linkCv(two(), 'a3', null)).toEqual({ ok: false, error: 'cv_required' })
+  })
+
+  it('refuses an unknown application or CV', () => {
+    expect(linkCv(two(), 'zzz', 'cv1')).toEqual({ ok: false, error: 'unknown_application' })
+    expect(linkCv(two(), 'a1', 'zzz')).toEqual({ ok: false, error: 'unknown_cv' })
+  })
+
+  it('does not mutate the input', () => {
+    const before = two()
+    linkCv(before, 'a1', 'cv2')
+    expect(before.applications[0]).toEqual(app('a1'))
   })
 })

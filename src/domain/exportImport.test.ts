@@ -69,7 +69,7 @@ function mutateApp(change: (a: Record<string, unknown>) => void, index = 1): unk
 describe('exportData', () => {
   it('produces a versioned object', () => {
     const out = exportData(state)
-    expect(out.version).toBe(1)
+    expect(out.version).toBe(2)
     expect(out.applications).toHaveLength(3)
   })
 
@@ -131,14 +131,15 @@ describe('importData rejects bad input without throwing', () => {
 
   it('reports a missing or unsupported version', () => {
     expect(errorsOf({})).toEqual([{ code: 'missing_field', path: 'version' }])
-    expect(errorsOf({ ...valid(), version: 2 })).toEqual([
-      { code: 'unsupported_version', path: 'version', params: { supported: 1, found: 2 } },
+    expect(errorsOf({ ...valid(), version: 3 })).toEqual([
+      { code: 'unsupported_version', path: 'version', params: { supported: 2, found: 3 } },
     ])
-    expect(errorsOf({ ...valid(), version: '1' })[0]?.code).toBe('unsupported_version')
+    expect(errorsOf({ ...valid(), version: 0 })[0]?.code).toBe('unsupported_version')
+    expect(errorsOf({ ...valid(), version: '2' })[0]?.code).toBe('unsupported_version')
     expect(errorsOf({ ...valid(), version: null })[0]).toEqual({
       code: 'unsupported_version',
       path: 'version',
-      params: { supported: 1, found: 'null' },
+      params: { supported: 2, found: 'null' },
     })
   })
 
@@ -383,6 +384,107 @@ describe('importData rejects bad input without throwing', () => {
   it('keeps markup in text as plain strings', () => {
     const r = importData(valid())
     expect(r.ok && r.state.applications[1]?.notes).toContain('<b>x</b>')
+  })
+})
+
+describe('version 1 files', () => {
+  it('are upgraded and read like version 2', () => {
+    const v1 = { ...valid(), version: 1 }
+    expect(importData(v1)).toEqual({ ok: true, state })
+  })
+
+  it('export again as version 2', () => {
+    const r = importData({ ...valid(), version: 1 })
+    expect(r.ok && exportData(r.state).version).toBe(2)
+  })
+
+  it('are still checked in full', () => {
+    const v1 = { ...valid(), version: 1, cvs: 'x' }
+    expect(errorsOf(v1)[0]).toEqual({ code: 'wrong_type', path: 'cvs', params: { expected: 'array', actual: 'string' } })
+  })
+
+  it('accept the old file shape with no CV file details and no toldThem', () => {
+    const old = {
+      version: 1,
+      cvs: [{ id: 'c', name: 'Short' }],
+      applications: [{ id: 'a', company: 'A', role: '', url: '', status: 'to_apply', createdAt: '2026-10-01T08:00:00.000Z' }],
+      settings: { reminderDays: 14, language: 'en' },
+    }
+    expect(importData(old).ok).toBe(true)
+  })
+})
+
+describe('CV file details and toldThem', () => {
+  const file = { fileName: 'cv.pdf', size: 1000, type: 'application/pdf' as const }
+  const withFile: AppState = {
+    ...state,
+    cvs: [{ id: 'cv1', name: 'Short', createdAt: '2026-10-01T08:00:00.000Z', file }, ...state.cvs.slice(1)],
+    applications: state.applications.map((a, i) => (i === 0 ? { ...a, toldThem: 'Jag nämnde React 😀' } : a)),
+  }
+
+  // A rejected CV also leaves its applications pointing at a missing CV; only the CV errors matter here.
+  const cvErrorsOf = (input: unknown): ImportError[] => errorsOf(input).filter((e) => e.path.startsWith('cvs'))
+
+  function mutateCv(change: (cv: Record<string, unknown>) => void): unknown {
+    const data = JSON.parse(JSON.stringify(exportData(withFile))) as Record<string, unknown>
+    change((data['cvs'] as Record<string, unknown>[])[0] as Record<string, unknown>)
+    return data
+  }
+
+  it('round-trip through JSON', () => {
+    expect(importData(JSON.parse(JSON.stringify(exportData(withFile))))).toEqual({ ok: true, state: withFile })
+  })
+
+  it('are left out of the export when not set', () => {
+    const out = exportData(state)
+    expect(Object.keys(out.cvs[0] ?? {})).toEqual(['id', 'name'])
+    expect('toldThem' in (out.applications[0] ?? {})).toBe(false)
+  })
+
+  it('reject a file that is not an object, and missing or wrong parts', () => {
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = 'x')))).toEqual([
+      { code: 'wrong_type', path: 'cvs[0].file', params: { expected: 'object', actual: 'string' } },
+    ])
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = {}))).map((e) => e.code)).toEqual([
+      'missing_field',
+      'missing_field',
+      'missing_field',
+    ])
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, fileName: '' })))).toEqual([
+      { code: 'empty_value', path: 'cvs[0].file.fileName' },
+    ])
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, fileName: 'x'.repeat(256) })))[0]?.code).toBe('out_of_range')
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, fileName: 5 }))) [0]?.code).toBe('wrong_type')
+  })
+
+  it('reject sizes that are zero, too big, fractional or not numbers', () => {
+    for (const size of [0, -1, 5 * 1024 * 1024 + 1]) {
+      expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, size })))[0]?.code).toBe('out_of_range')
+    }
+    for (const size of [1.5, '10', null, Number.NaN]) {
+      expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, size })))[0]?.code).toBe('wrong_type')
+    }
+    expect(importData(mutateCv((cv) => (cv['file'] = { ...file, size: 5 * 1024 * 1024 }))).ok).toBe(true)
+  })
+
+  it('reject any type but PDF', () => {
+    expect(cvErrorsOf(mutateCv((cv) => (cv['file'] = { ...file, type: 'text/html' })))).toEqual([
+      { code: 'invalid_value', path: 'cvs[0].file.type', params: { allowed: ['application/pdf'] } },
+    ])
+  })
+
+  it('reject a bad createdAt on a CV and a non-text toldThem', () => {
+    expect(cvErrorsOf(mutateCv((cv) => (cv['createdAt'] = 'yesterday')))).toEqual([
+      { code: 'invalid_date', path: 'cvs[0].createdAt' },
+    ])
+    expect(errorsOf(mutateApp((a) => (a['toldThem'] = 5), 0))).toEqual([
+      { code: 'wrong_type', path: 'applications[0].toldThem', params: { expected: 'string', actual: 'number' } },
+    ])
+  })
+
+  it('keeps markup in file names and toldThem as plain text', () => {
+    const r = importData(mutateCv((cv) => (cv['file'] = { ...file, fileName: '<img src=x>.pdf' })))
+    expect(r.ok && r.state.cvs[0]?.file?.fileName).toBe('<img src=x>.pdf')
   })
 })
 

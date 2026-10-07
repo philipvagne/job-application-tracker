@@ -358,3 +358,27 @@ describe('changeStatus and the CV', () => {
     expect(app).toEqual(noCv())
   })
 })
+
+describe('toldThem', () => {
+  it('is saved, kept as typed, and survives other edits', () => {
+    const r = updateApplication(make(), { toldThem: '  Jag sa att jag kan börja 1 nov.\n' })
+    expect(r.ok && r.value.toldThem).toBe('  Jag sa att jag kan börja 1 nov.\n')
+    if (!r.ok) return
+    const again = updateApplication(r.value, { role: 'Lead' })
+    expect(again.ok && again.value.toldThem).toBe('  Jag sa att jag kan börja 1 nov.\n')
+  })
+
+  it('is removed when emptied', () => {
+    const r = updateApplication(make({ toldThem: 'x' }), { toldThem: '   ' })
+    expect(r.ok && 'toldThem' in r.value).toBe(false)
+  })
+
+  it('stays out of a new application', () => {
+    expect('toldThem' in make()).toBe(false)
+  })
+
+  it('keeps markup as plain text', () => {
+    const r = updateApplication(make(), { toldThem: '<script>alert(1)</script>' })
+    expect(r.ok && r.value.toldThem).toBe('<script>alert(1)</script>')
+  })
+})

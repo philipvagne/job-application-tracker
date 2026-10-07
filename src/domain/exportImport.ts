@@ -6,13 +6,14 @@ import {
   type Application,
   type ClosedReason,
   type Cv,
+  type CvFile,
   type Language,
   type Settings,
   type Status,
 } from './types'
+import { MAX_CV_FILE_BYTES, MAX_FILE_NAME_LENGTH } from './cvFile'
+import { EXPORT_VERSION, migrateToLatest } from './migrate'
 import { isHttpUrl } from './url'
-
-export const EXPORT_VERSION = 1
 
 export interface ExportFile {
   version: typeof EXPORT_VERSION
@@ -71,6 +72,16 @@ function copyApplication(a: Application): Application {
   if (a.interviewAt !== undefined) copy.interviewAt = a.interviewAt
   if (a.offerAt !== undefined) copy.offerAt = a.offerAt
   if (a.notes !== undefined) copy.notes = a.notes
+  if (a.toldThem !== undefined) copy.toldThem = a.toldThem
+  return copy
+}
+
+function copyCv(cv: Cv): Cv {
+  const copy: Cv = { id: cv.id, name: cv.name }
+  if (cv.createdAt !== undefined) copy.createdAt = cv.createdAt
+  if (cv.file !== undefined) {
+    copy.file = { fileName: cv.file.fileName, size: cv.file.size, type: cv.file.type }
+  }
   return copy
 }
 
@@ -79,7 +90,7 @@ export function exportData(state: AppState): ExportFile {
   return {
     version: EXPORT_VERSION,
     applications: state.applications.map(copyApplication),
-    cvs: state.cvs.map((cv) => ({ id: cv.id, name: cv.name })),
+    cvs: state.cvs.map(copyCv),
     settings: copySettings(state.settings),
   }
 }
@@ -119,6 +130,39 @@ function wrongType(path: string, expected: string, value: unknown): ImportError 
   return error('wrong_type', path, { expected, actual: typeName(value) })
 }
 
+/** The details of a CV's PDF, if the entry has one. The file itself is not part of the backup. */
+function validateCvFileDetails(raw: unknown, path: string, errors: ImportError[]): CvFile | undefined {
+  if (raw === undefined) return undefined
+  if (!isRecord(raw)) {
+    errors.push(wrongType(path, 'object', raw))
+    return undefined
+  }
+  const before = errors.length
+  const { fileName, size, type } = raw
+
+  if (fileName === undefined) errors.push(error('missing_field', `${path}.fileName`))
+  else if (typeof fileName !== 'string') errors.push(wrongType(`${path}.fileName`, 'string', fileName))
+  else if (fileName === '') errors.push(error('empty_value', `${path}.fileName`))
+  else if (fileName.length > MAX_FILE_NAME_LENGTH) {
+    errors.push(error('out_of_range', `${path}.fileName`, { min: 1, max: MAX_FILE_NAME_LENGTH }))
+  }
+
+  if (size === undefined) errors.push(error('missing_field', `${path}.size`))
+  else if (typeof size !== 'number' || !Number.isInteger(size)) {
+    errors.push(wrongType(`${path}.size`, 'integer', size))
+  } else if (size < 1 || size > MAX_CV_FILE_BYTES) {
+    errors.push(error('out_of_range', `${path}.size`, { min: 1, max: MAX_CV_FILE_BYTES }))
+  }
+
+  if (type === undefined) errors.push(error('missing_field', `${path}.type`))
+  else if (type !== 'application/pdf') {
+    errors.push(error('invalid_value', `${path}.type`, { allowed: ['application/pdf'] }))
+  }
+
+  if (errors.length > before) return undefined
+  return { fileName: fileName as string, size: size as number, type: 'application/pdf' }
+}
+
 function validateCvs(raw: unknown, errors: ImportError[]): Cv[] {
   if (raw === undefined) {
     errors.push(error('missing_field', 'cvs'))
@@ -148,8 +192,17 @@ function validateCvs(raw: unknown, errors: ImportError[]): Cv[] {
     else if (typeof name !== 'string') errors.push(wrongType(`${path}.name`, 'string', name))
     else if (name === '') errors.push(error('empty_value', `${path}.name`))
 
+    const createdAt = item['createdAt']
+    if (createdAt !== undefined && !isIsoDate(createdAt)) {
+      errors.push(error('invalid_date', `${path}.createdAt`))
+    }
+    const file = validateCvFileDetails(item['file'], `${path}.file`, errors)
+
     if (errors.length === before && typeof id === 'string' && typeof name === 'string') {
-      cvs.push({ id, name })
+      const cv: Cv = { id, name }
+      if (typeof createdAt === 'string') cv.createdAt = createdAt
+      if (file !== undefined) cv.file = file
+      cvs.push(cv)
     }
   })
   return cvs
@@ -267,6 +320,10 @@ function validateApplications(
     if (notes !== undefined && typeof notes !== 'string') {
       errors.push(wrongType(`${path}.notes`, 'string', notes))
     }
+    const toldThem = item['toldThem']
+    if (toldThem !== undefined && typeof toldThem !== 'string') {
+      errors.push(wrongType(`${path}.toldThem`, 'string', toldThem))
+    }
 
     if (errors.length === before && validStatus !== undefined && createdAt !== undefined) {
       const app: Application = {
@@ -284,6 +341,7 @@ function validateApplications(
       if (interviewAt !== undefined) app.interviewAt = interviewAt
       if (offerAt !== undefined) app.offerAt = offerAt
       if (typeof notes === 'string') app.notes = notes
+      if (typeof toldThem === 'string') app.toldThem = toldThem
       applications.push(app)
     }
   })
@@ -344,8 +402,10 @@ function validateSettings(
  * Validates untrusted input and returns the parsed state, or a list of errors
  * (codes, not text). Never throws. Unknown extra fields are dropped.
  */
-export function importData(input: unknown): ImportResult {
+export function importData(raw: unknown): ImportResult {
   try {
+    // Files from version 1 are upgraded first, so everything below checks the current shape.
+    const input = migrateToLatest(raw)
     if (!isRecord(input)) return { ok: false, errors: [wrongType('$', 'object', input)] }
 
     const version = input['version']

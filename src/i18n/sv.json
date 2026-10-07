@@ -56,7 +56,8 @@
       "title": "Säkerhetskopia",
       "lastExport": "Senaste export: {date}",
       "neverExported": "Du har inte exporterat någon säkerhetskopia ännu.",
-      "exported": "Säkerhetskopian är exporterad."
+      "exported": "Säkerhetskopian är exporterad.",
+      "noFiles": "Säkerhetskopior innehåller inte dina CV-filer ännu. Behåll dina original-PDF:er."
     },
     "import": {
       "label": "Importera en säkerhetskopia",
@@ -94,7 +95,9 @@
     "link": "Länk",
     "notes": "Anteckningar",
     "companyRequired": "Ange ett företagsnamn.",
-    "linkInvalid": "Ange en länk som börjar med http:// eller https://."
+    "linkInvalid": "Ange en länk som börjar med http:// eller https://.",
+    "toldThem": "Det jag sa till dem",
+    "toldThemHint": "Det du skrev eller sa till arbetsgivaren, med egna ord."
   },
   "quickAdd": {
     "title": "Lägg till ett jobb",
@@ -176,11 +179,14 @@
     "closed": "Avslutad: {company}",
     "reopened": "Öppnad igen: {company}",
     "saved": "Sparad: {company}",
-    "deleted": "Borttagen: {company}"
+    "deleted": "Borttagen: {company}",
+    "cvAdded": "CV tillagt: {name}"
   },
   "editApp": {
     "title": "Redigera ansökan",
-    "save": "Spara"
+    "save": "Spara",
+    "cv": "CV",
+    "noCv": "Inget CV"
   },
   "confirmApp": {
     "close": {
@@ -229,7 +235,12 @@
       "reminderDays": "dagar till påminnelse",
       "language": "språk",
       "lastExportAt": "senaste export",
-      "lastCvId": "senast använda CV"
+      "lastCvId": "senast använda CV",
+      "file": "fil",
+      "fileName": "filnamn",
+      "size": "storlek",
+      "type": "typ",
+      "toldThem": "det jag sa"
     }
   },
   "importErrors": {
@@ -246,5 +257,26 @@
     "closed_reason_mismatch": "{path}: orsaken till avslutet stämmer inte med statusen “{status}”.",
     "out_of_range": "{path}: måste vara ett heltal från {min} till {max}.",
     "too_large": "Filen är större än {maxMb} MB."
+  },
+  "cvFile": {
+    "attach": "Bifoga en PDF (valfritt)",
+    "hint": "Bara PDF, högst {max} MB. Filen stannar i den här webbläsaren.",
+    "unavailable": "Den här webbläsaren kan inte lagra filer, så CV-filer kan inte läggas till. Du kan ändå använda ett CV-namn.",
+    "open": "Öppna CV",
+    "noFile": "Ingen fil bifogad",
+    "missing": "Filen finns inte lagrad i den här webbläsaren",
+    "openFailed": "Filen kunde inte öppnas.",
+    "error": {
+      "empty": "Filen är tom.",
+      "too_large": "Filen är större än {max} MB.",
+      "name_too_long": "Filnamnet är för långt (mer än {max} tecken).",
+      "not_pdf": "Bara PDF-filer kan läggas till. Välj en fil som slutar på .pdf.",
+      "unreadable": "Filen gick inte att läsa. Försök välja den igen.",
+      "save_failed": "CV:t kunde inte sparas, så inget lades till. Exportera en säkerhetskopia av dina uppgifter och försök igen.",
+      "quota": "Webbläsarens lagringsutrymme är fullt, så filen lades inte till.",
+      "blocked": "Fillagringen används av en annan flik med appen. Stäng den andra fliken och försök igen.",
+      "unavailable": "Den här webbläsaren kan inte lagra filer.",
+      "unknown": "Något gick fel när filen skulle sparas. Inget lades till."
+    }
   }
 }

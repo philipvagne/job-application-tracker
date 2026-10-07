@@ -21,8 +21,9 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 6. **Reminders that compute themselves, and are optional.** "No reply after N days" can be switched on or off in settings, and N is a setting.
 7. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.
 8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead.
-9. **Backup.** Export and import as JSON including the CV files, plus CSV export. The app asks the browser to keep its storage, and reminds the user when a backup is overdue.
-10. **Swedish and English** interface, desktop-first, keyboard accessible. It must work on a phone but is not optimised for one.
+9. **Backup.** Export and import as JSON including the CV files, plus CSV export. The app asks the browser to keep its storage, and reminds the user when a backup is overdue. Built in two steps: first the application data and CV names and file details, **without the files themselves** (the app says so plainly), then a "full backup" pass that adds the files.
+10. **CV deletion.** A CV entry and its file can be deleted, with a confirmation that names the applications using it. Must be done before release.
+11. **Swedish and English** interface, desktop-first, keyboard accessible. It must work on a phone but is not optimised for one.
 
 ## Out of scope
 
@@ -39,8 +40,8 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 ## Data and tech choices
 
 - **Storage:** application data in the browser as now. CV files in IndexedDB behind the storage interface, as Blobs, with a size cap per file and in total. Nothing is sent anywhere, and a "delete all my data" button removes everything including files.
-- **Files:** PDF only, checked by type and by the file's first bytes. Files open from a local object URL.
-- **Backup with files:** one JSON file with the files encoded inside it, with a total size limit and a clear message when it is exceeded.
+- **Files:** PDF only, at most 5 MB each, checked by name, size and the file's first bytes. Files open from a local object URL.
+- **Backup with files:** one JSON file with the files encoded inside it (base64), with a total size limit and a clear message when it is exceeded. Decided and built in its own pass; until then the backup does not contain the files.
 - **Stack:** React, Vite and TypeScript, deployed as a static site on Cloudflare. No backend.
 - **Language files:** Swedish and English in two JSON files with the same keys, checked at build time.
 - **Logic in plain functions,** so it can be tested without a browser.
@@ -53,8 +54,10 @@ The project is finished when every line below is true.
 - [ ] A live address works on desktop, and is usable on a phone.
 - [ ] Adding a job from a link or the bookmarklet takes under 10 seconds, timed with a real example.
 - [ ] A CV file can be uploaded, linked to an application, and opened again from its row after a reload.
-- [ ] All ten version 1 features work.
-- [ ] Export, clear all data, then import restores everything exactly, including the CV files.
+- [ ] All eleven version 1 features work.
+- [ ] Export, clear all data, then import restores all application data exactly. (CV files are not in the backup until the full backup pass; until then the app tells the user to keep the original PDFs.)
+- [ ] Full backup pass done: export, clear all data, then import restores everything, including the CV files.
+- [ ] A CV entry and its file can be deleted, with a confirmation, before release.
 - [ ] Unit tests pass for reminders, statistics per CV, file validation, and the import and export round trip, and the GitHub Action is green.
 - [ ] Swedish and English are both complete, with no missing text.
 - [ ] The Network tab shows no data leaving the browser.
@@ -78,5 +81,6 @@ Never cut: link-first quick add, CV files, the application record, the lists and
 
 - [ ] What name does the app get?
 - [ ] Lists or columns? Decide from a mockup before building the final layout.
-- [ ] Size limits for CV files (per file and in total).
+- [ ] Size limit for CV files in total. (Per file is decided: 5 MB.)
+- [ ] How are the CV files backed up: base64 inside the one JSON file (preferred), or something else? What happens to the 2 MB import limit?
 - [ ] Does Arbetsförmedlingen or an a-kassa require a specific format for reporting job-search activity?

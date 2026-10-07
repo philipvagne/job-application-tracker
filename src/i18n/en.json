@@ -56,7 +56,8 @@
       "title": "Backup",
       "lastExport": "Last export: {date}",
       "neverExported": "You haven't exported a backup yet.",
-      "exported": "Backup exported."
+      "exported": "Backup exported.",
+      "noFiles": "Backups don't include your CV files yet. Keep your original PDFs."
     },
     "import": {
       "label": "Import a backup",
@@ -94,7 +95,9 @@
     "link": "Link",
     "notes": "Notes",
     "companyRequired": "Enter a company name.",
-    "linkInvalid": "Enter a link that starts with http:// or https://."
+    "linkInvalid": "Enter a link that starts with http:// or https://.",
+    "toldThem": "What I told them",
+    "toldThemHint": "What you wrote or said to the employer, in your own words."
   },
   "quickAdd": {
     "title": "Add a job",
@@ -176,11 +179,14 @@
     "closed": "Closed: {company}",
     "reopened": "Reopened: {company}",
     "saved": "Saved: {company}",
-    "deleted": "Deleted: {company}"
+    "deleted": "Deleted: {company}",
+    "cvAdded": "CV added: {name}"
   },
   "editApp": {
     "title": "Edit application",
-    "save": "Save"
+    "save": "Save",
+    "cv": "CV",
+    "noCv": "No CV"
   },
   "confirmApp": {
     "close": {
@@ -229,7 +235,12 @@
       "reminderDays": "reminder days",
       "language": "language",
       "lastExportAt": "last export date",
-      "lastCvId": "last used CV"
+      "lastCvId": "last used CV",
+      "file": "file",
+      "fileName": "file name",
+      "size": "size",
+      "type": "type",
+      "toldThem": "what I told them"
     }
   },
   "importErrors": {
@@ -246,5 +257,26 @@
     "closed_reason_mismatch": "{path}: the closing reason doesn't match the status “{status}”.",
     "out_of_range": "{path}: must be a whole number from {min} to {max}.",
     "too_large": "The file is larger than {maxMb} MB."
+  },
+  "cvFile": {
+    "attach": "Attach a PDF (optional)",
+    "hint": "PDF only, up to {max} MB. The file stays in this browser.",
+    "unavailable": "This browser can't store files, so CV files can't be added. You can still use a CV name.",
+    "open": "Open CV",
+    "noFile": "No file attached",
+    "missing": "The file isn't stored in this browser",
+    "openFailed": "The file couldn't be opened.",
+    "error": {
+      "empty": "That file is empty.",
+      "too_large": "That file is larger than {max} MB.",
+      "name_too_long": "That file name is too long (more than {max} characters).",
+      "not_pdf": "Only PDF files can be added. Choose a file that ends in .pdf.",
+      "unreadable": "The file couldn't be read. Try choosing it again.",
+      "save_failed": "The CV couldn't be saved, so nothing was added. Export a backup of your data and try again.",
+      "quota": "This browser's storage is full, so the file wasn't added.",
+      "blocked": "The file storage is in use by another tab of this app. Close the other tab and try again.",
+      "unavailable": "This browser can't store files.",
+      "unknown": "Something went wrong when storing the file. Nothing was added."
+    }
   }
 }

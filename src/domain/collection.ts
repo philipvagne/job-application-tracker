@@ -1,5 +1,5 @@
 import { markApplied, type TransitionError } from './application'
-import type { AppState, Application, IsoDate, Result } from './types'
+import type { AppState, Application, Cv, CvFile, IsoDate, Result } from './types'
 
 export type CvError = 'name_required' | 'name_taken' | 'duplicate_id'
 
@@ -30,13 +30,44 @@ export function deleteApplication(state: AppState, id: string): AppState {
  * Adds a CV. The name is trimmed and must be non-empty and unique, ignoring case.
  * Renaming and deleting CVs are not part of this version of the app yet.
  */
-export function addCv(state: AppState, input: { id: string; name: string }): Result<AppState, CvError> {
+export function addCv(
+  state: AppState,
+  input: { id: string; name: string; file?: CvFile; now?: IsoDate },
+): Result<AppState, CvError> {
   const name = input.name.trim()
   if (name === '') return { ok: false, error: 'name_required' }
   const lower = name.toLowerCase()
   if (state.cvs.some((cv) => cv.name.toLowerCase() === lower)) return { ok: false, error: 'name_taken' }
   if (state.cvs.some((cv) => cv.id === input.id)) return { ok: false, error: 'duplicate_id' }
-  return { ok: true, value: { ...state, cvs: [...state.cvs, { id: input.id, name }] } }
+  const cv: Cv = { id: input.id, name }
+  if (input.now !== undefined) cv.createdAt = input.now
+  if (input.file !== undefined) cv.file = { ...input.file }
+  return { ok: true, value: { ...state, cvs: [...state.cvs, cv] } }
+}
+
+export type LinkCvError = 'unknown_application' | 'unknown_cv' | 'cv_required'
+
+/**
+ * Links an application to a CV entry, or removes the link with null. An application that
+ * has been sent (appliedAt) must keep a CV, so null is refused for it. Changing the link
+ * after applying is allowed; the per-CV statistics then follow the new CV.
+ */
+export function linkCv(
+  state: AppState,
+  applicationId: string,
+  cvId: string | null,
+): Result<AppState, LinkCvError> {
+  const application = state.applications.find((a) => a.id === applicationId)
+  if (application === undefined) return { ok: false, error: 'unknown_application' }
+  if (cvId === null) {
+    if (application.appliedAt !== undefined) return { ok: false, error: 'cv_required' }
+    if (application.cvId === undefined) return { ok: true, value: state }
+    const { cvId: _removed, ...rest } = application
+    return { ok: true, value: replaceApplication(state, rest) }
+  }
+  if (!state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
+  if (application.cvId === cvId) return { ok: true, value: state }
+  return { ok: true, value: replaceApplication(state, { ...application, cvId }) }
 }
 
 /** Marks one application as applied with an existing CV, and remembers that CV as the last used. */

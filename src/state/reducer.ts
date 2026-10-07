@@ -2,6 +2,7 @@ import {
   addApplications,
   addCv,
   deleteApplication,
+  linkCv,
   markApplicationApplied,
   markExported,
   replaceApplication,
@@ -10,6 +11,7 @@ import {
   setReminderDays,
   type AppState,
   type Application,
+  type CvFile,
   type IsoDate,
   type Language,
 } from '../domain'
@@ -22,7 +24,8 @@ export type Action =
   | { type: 'addApplications'; applications: Application[] }
   | { type: 'replaceApplication'; application: Application }
   | { type: 'deleteApplication'; id: string }
-  | { type: 'addCv'; id: string; name: string }
+  | { type: 'addCv'; id: string; name: string; file?: CvFile; now?: IsoDate }
+  | { type: 'linkCv'; applicationId: string; cvId: string | null }
   | { type: 'markApplied'; id: string; cvId: string; now: IsoDate }
   | { type: 'reset' }
 
@@ -47,7 +50,11 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'deleteApplication':
       return deleteApplication(state, action.id)
     case 'addCv': {
-      const result = addCv(state, { id: action.id, name: action.name })
+      const result = addCv(state, { id: action.id, name: action.name, file: action.file, now: action.now })
+      return result.ok ? result.value : state
+    }
+    case 'linkCv': {
+      const result = linkCv(state, action.applicationId, action.cvId)
       return result.ok ? result.value : state
     }
     case 'markApplied': {

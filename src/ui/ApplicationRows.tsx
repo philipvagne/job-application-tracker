@@ -29,21 +29,55 @@ function HostLink({ url }: { url: string }) {
   )
 }
 
-interface ToApplyRowProps {
+interface CvLineProps {
   application: Application
-  onApplied: () => void
-  onMenu: (action: MenuAction) => void
+  cvs: readonly Cv[]
+  onOpenCv: (cv: Cv) => void
 }
 
-export function ToApplyRow({ application, onApplied, onMenu }: ToApplyRowProps) {
+/** The CV linked to the application: its name, and a button to open its PDF if it has one. */
+function CvLine({ application, cvs, onOpenCv }: CvLineProps) {
+  const { t, fileStatus } = useApp()
+  const cv = cvs.find((c) => c.id === application.cvId)
+  if (cv === undefined) return null
+  const status = fileStatus(cv)
+  return (
+    <>
+      <span>{t('row.cvName', { name: cv.name })}</span>
+      {status === 'missing' && <span>{t('cvFile.missing')}</span>}
+      {(status === 'available' || status === 'unknown') && (
+        <button
+          type="button"
+          className="btn btn--small"
+          aria-label={t('row.actionFor', { action: t('cvFile.open'), company: application.company })}
+          onClick={() => onOpenCv(cv)}
+        >
+          {t('cvFile.open')}
+        </button>
+      )}
+    </>
+  )
+}
+
+interface ToApplyRowProps {
+  application: Application
+  cvs: readonly Cv[]
+  onApplied: () => void
+  onMenu: (action: MenuAction) => void
+  onOpenCv: (cv: Cv) => void
+}
+
+export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv }: ToApplyRowProps) {
   const { t } = useApp()
+  const hasMeta = application.url !== '' || application.cvId !== undefined
   return (
     <li className="row">
       <div className="row__main">
         <RowTitle application={application} />
-        {application.url !== '' && (
+        {hasMeta && (
           <p className="row__meta">
-            <HostLink url={application.url} />
+            {application.url !== '' && <HostLink url={application.url} />}
+            <CvLine application={application} cvs={cvs} onOpenCv={onOpenCv} />
           </p>
         )}
       </div>
@@ -68,16 +102,16 @@ interface AppliedRowProps {
   cvs: readonly Cv[]
   now: string
   onMenu: (action: MenuAction) => void
+  onOpenCv: (cv: Cv) => void
 }
 
-export function AppliedRow({ application, cvs, now, onMenu }: AppliedRowProps) {
+export function AppliedRow({ application, cvs, now, onMenu, onOpenCv }: AppliedRowProps) {
   const { t, language } = useApp()
   const days = application.appliedAt === undefined ? null : daysSince(application.appliedAt, now)
   const when =
     days === null
       ? null
       : new Intl.RelativeTimeFormat(language, { numeric: 'auto' }).format(-days, 'day')
-  const cvName = cvs.find((cv) => cv.id === application.cvId)?.name
   const status = application.status === 'closed' ? 'applied' : application.status
 
   return (
@@ -87,7 +121,7 @@ export function AppliedRow({ application, cvs, now, onMenu }: AppliedRowProps) {
         <p className="row__meta">
           <span className="badge">{t(`status.${status}`)}</span>
           {when !== null && <span>{t('row.appliedWhen', { when })}</span>}
-          {cvName !== undefined && <span>{t('row.cvName', { name: cvName })}</span>}
+          <CvLine application={application} cvs={cvs} onOpenCv={onOpenCv} />
         </p>
       </div>
       <div className="row__actions">
@@ -99,11 +133,13 @@ export function AppliedRow({ application, cvs, now, onMenu }: AppliedRowProps) {
 
 interface ClosedRowProps {
   application: Application
+  cvs: readonly Cv[]
   onReopen: () => void
   onMenu: (action: MenuAction) => void
+  onOpenCv: (cv: Cv) => void
 }
 
-export function ClosedRow({ application, onReopen, onMenu }: ClosedRowProps) {
+export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv }: ClosedRowProps) {
   const { t } = useApp()
   const company = application.company
   const reason = application.closedReason === undefined ? null : t(`closedReason.${application.closedReason}`)
@@ -116,7 +152,10 @@ export function ClosedRow({ application, onReopen, onMenu }: ClosedRowProps) {
     <li className="row">
       <div className="row__main">
         <RowTitle application={application} />
-        {reason !== null && <p className="row__meta">{t('row.closedWithReason', { reason })}</p>}
+        <p className="row__meta">
+          {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
+          <CvLine application={application} cvs={cvs} onOpenCv={onOpenCv} />
+        </p>
       </div>
       <div className="row__actions">
         {buttons.map((button, i) => (

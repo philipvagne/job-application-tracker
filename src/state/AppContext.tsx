@@ -2,7 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import {
   addCv,
   changeStatus,
+  cvFileStatus,
   isBackupDue,
+  linkCv,
   markReplied,
   newApplication,
   parsePastedList,
@@ -12,15 +14,31 @@ import {
   type ApplicationChanges,
   type ApplicationFieldError,
   type ClosedReason,
+  type Cv,
   type CvError,
+  type CvFileStatus,
   type Language,
+  type LinkCvError,
   type Result,
   type Status,
   type TransitionError,
 } from '../domain'
 import { dictionaries, t as translate, type Dict, type Params, type TextKey } from '../i18n'
-import { CORRUPT_BACKUP_KEY, STATE_KEY, buildExportFile, type SaveErrorCode, type StateStore } from '../storage'
+import {
+  CORRUPT_BACKUP_KEY,
+  STATE_KEY,
+  buildExportFile,
+  readCvFile,
+  uploadCv,
+  type CvFileStore,
+  type PickedFile,
+  type ReadCvError,
+  type SaveErrorCode,
+  type StateStore,
+  type UploadErrorCode,
+} from '../storage'
 import { downloadTextFile } from '../ui/download'
+import { openPdfInNewTab } from '../ui/openBlob'
 import { loadApp, type LoadStatus, type Loaded } from './load'
 import { reducer, type Action } from './reducer'
 
@@ -33,14 +51,18 @@ export interface AppContextValue {
   /** Set when the last save failed. Cleared by the next successful save or by dismissing. */
   saveError: SaveErrorCode | null
   backupDue: boolean
+  /** False when this browser cannot store CV files (no IndexedDB), so uploads are off. */
+  filesAvailable: boolean
+  /** Whether a CV's file is stored here. Only meaningful for CVs that have file details. */
+  fileStatus: (cv: Cv) => CvFileStatus
   actions: {
     setLanguage(language: Language): void
     setReminderDays(days: number): void
     /** Replaces everything with an imported, already validated state. */
     replaceState(state: AppState): void
     exportBackup(): void
-    /** Returns false if the data could not be removed. */
-    deleteAllData(): boolean
+    /** Removes the data and the CV files. Returns false if they could not be removed. */
+    deleteAllData(): Promise<boolean>
     downloadUnreadable(): void
     clearUnreadable(): void
     dismissSaveError(): void
@@ -53,6 +75,12 @@ export interface AppContextValue {
     deleteApplication(id: string): void
     /** Adds a CV and returns it. Fails if the name is empty or already used. */
     addCv(name: string): Result<{ id: string; name: string }, CvError>
+    /** Stores a PDF and adds a CV entry for it. Nothing is kept if any step fails. */
+    uploadCv(file: PickedFile, name: string): Promise<Result<Cv, UploadErrorCode>>
+    /** Opens a CV's PDF in a new tab. */
+    openCv(cvId: string): Promise<'ok' | ReadCvError>
+    /** Links an application to a CV entry, or removes the link with null. */
+    linkCv(applicationId: string, cvId: string | null): Result<null, LinkCvError>
     /** Marks a to-apply application as applied with this CV, and remembers the CV. */
     markApplied(id: string, cvId: string): boolean
     markReplied(id: string): boolean
@@ -70,6 +98,8 @@ export function useApp(): AppContextValue {
 
 interface AppProviderProps {
   store: StateStore
+  /** Where CV files are kept. */
+  files: CvFileStore
   /** Loaded once, before the first render (not in an effect, so StrictMode cannot load twice). */
   initial: Loaded
   children: ReactNode
@@ -77,8 +107,11 @@ interface AppProviderProps {
 
 const nowIso = (): string => new Date().toISOString()
 
-export function AppProvider({ store, initial, children }: AppProviderProps) {
+export function AppProvider({ store, files, initial, children }: AppProviderProps) {
   const [state, setState] = useState(initial.data)
+  // The ids of the CV files stored in this browser, or null when that could not be read.
+  const [storedIds, setStoredIds] = useState<ReadonlySet<string> | null>(null)
+  const [filesAvailable, setFilesAvailable] = useState(true)
   const [status, setStatus] = useState(initial.status)
   const [saveError, setSaveError] = useState<SaveErrorCode | null>(null)
   const [reminderDismissed, setReminderDismissed] = useState(false)
@@ -96,30 +129,48 @@ export function AppProvider({ store, initial, children }: AppProviderProps) {
     setStatus(next)
   }, [])
 
+  /** True if the data was saved (or is held in memory because storage is off). */
   const persist = useCallback(
-    (next: AppState) => {
+    (next: AppState): boolean => {
       const result = store.saveState(next)
       if (result.ok) {
         setSaveError(null)
         if (result.persistent !== statusRef.current.persistent) {
           showStatus({ ...statusRef.current, persistent: result.persistent })
         }
-      } else {
-        setSaveError(result.code)
+        return true
       }
+      setSaveError(result.code)
+      return false
     },
     [store, showStatus],
   )
 
+  /** Applies an action and saves. Returns false only if saving failed. */
   const commit = useCallback(
-    (action: Action) => {
+    (action: Action): boolean => {
       const next = reducer(stateRef.current, action)
-      if (next === stateRef.current) return
+      if (next === stateRef.current) return true
       showState(next)
-      persist(next)
+      return persist(next)
     },
     [showState, persist],
   )
+
+  const refreshStoredFiles = useCallback(async () => {
+    const result = await files.keys()
+    if (result.ok) {
+      setStoredIds(new Set(result.value))
+      setFilesAvailable(true)
+    } else {
+      setStoredIds(null)
+      setFilesAvailable(result.code !== 'unavailable')
+    }
+  }, [files])
+
+  useEffect(() => {
+    void refreshStoredFiles()
+  }, [refreshStoredFiles])
 
   // Another tab changed storage: load what it saved. Storage events never fire in the tab
   // that made the change. While data is only held in memory there is nothing on disk to follow.
@@ -161,9 +212,13 @@ export function AppProvider({ store, initial, children }: AppProviderProps) {
         commit({ type: 'markExported', now })
       },
 
-      deleteAllData() {
+      async deleteAllData() {
+        // Files first, so a failure leaves everything as it was. No IndexedDB means no files to remove.
+        const cleared = await files.clearAll()
+        if (!cleared.ok && cleared.code !== 'unavailable') return false
         const result = store.clearAllData()
         if (!result.ok) return false
+        setStoredIds(cleared.ok ? new Set() : null)
         const empty = reducer(stateRef.current, { type: 'reset' })
         showState(empty)
         showStatus({ ...statusRef.current, recovered: false, backedUp: false, hasCorruptCopy: false })
@@ -234,10 +289,53 @@ export function AppProvider({ store, initial, children }: AppProviderProps) {
 
       addCv(name) {
         const id = crypto.randomUUID()
-        const result = addCv(stateRef.current, { id, name })
+        const now = nowIso()
+        const result = addCv(stateRef.current, { id, name, now })
         if (!result.ok) return result
-        commit({ type: 'addCv', id, name })
+        commit({ type: 'addCv', id, name, now })
         return { ok: true, value: { id, name: name.trim() } }
+      },
+
+      async uploadCv(file, name) {
+        const result = await uploadCv(
+          {
+            files,
+            newId: () => crypto.randomUUID(),
+            now: nowIso,
+            getState: () => stateRef.current,
+            addEntry: (entry) => {
+              const before = stateRef.current
+              const saved = commit({ type: 'addCv', ...entry })
+              if (stateRef.current === before) return false
+              if (!saved) {
+                // Not saved: take the entry out again, so no entry is left without its file.
+                showState(before)
+                return false
+              }
+              return true
+            },
+          },
+          { file, name },
+        )
+        await refreshStoredFiles()
+        return result
+      },
+
+      async openCv(cvId) {
+        const result = await readCvFile(files, cvId)
+        if (!result.ok) {
+          await refreshStoredFiles()
+          return result.error
+        }
+        openPdfInNewTab(result.value)
+        return 'ok'
+      },
+
+      linkCv(applicationId, cvId) {
+        const result = linkCv(stateRef.current, applicationId, cvId)
+        if (!result.ok) return result
+        commit({ type: 'linkCv', applicationId, cvId })
+        return { ok: true, value: null }
       },
 
       markApplied(id, cvId) {
@@ -263,14 +361,16 @@ export function AppProvider({ store, initial, children }: AppProviderProps) {
         return result
       },
     }),
-    [commit, persist, showState, showStatus, store],
+    [commit, persist, showState, showStatus, store, files, refreshStoredFiles],
   )
+
+  const fileStatus = useCallback((cv: Cv): CvFileStatus => cvFileStatus(cv, storedIds), [storedIds])
 
   const backupDue = !reminderDismissed && isBackupDue(state, nowIso())
 
   const value = useMemo<AppContextValue>(
-    () => ({ state, language, dict, t, status, saveError, backupDue, actions }),
-    [state, language, dict, t, status, saveError, backupDue, actions],
+    () => ({ state, language, dict, t, status, saveError, backupDue, filesAvailable, fileStatus, actions }),
+    [state, language, dict, t, status, saveError, backupDue, filesAvailable, fileStatus, actions],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

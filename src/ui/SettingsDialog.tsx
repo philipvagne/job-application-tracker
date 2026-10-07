@@ -116,9 +116,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setPendingImport(null)
   }
 
-  function confirmDeleteAll(): void {
+  async function confirmDeleteAll(): Promise<void> {
     setConfirmDelete(false)
-    if (actions.deleteAllData()) {
+    if (await actions.deleteAllData()) {
       setDeleteFailed(false)
       setMessage('deleted')
       setDraft(null)
@@ -181,6 +181,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               ? t('settings.backup.neverExported')
               : t('settings.backup.lastExport', { date: formatDate(lastExport, language) })}
           </p>
+          <p className="hint">{t('settings.backup.noFiles')}</p>
           <p>
             <button
               type="button"
@@ -266,7 +267,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         body={t('confirm.delete.body')}
         confirmLabel={t('confirm.delete.button')}
         danger
-        onConfirm={confirmDeleteAll}
+        onConfirm={() => void confirmDeleteAll()}
         onCancel={() => setConfirmDelete(false)}
       />
     </>

@@ -24,6 +24,7 @@ export interface ApplicationChanges {
   role?: string
   url?: string
   notes?: string
+  toldThem?: string
 }
 
 /** Trims the text fields and returns what is wrong with them. Role may be empty; so may the link. */
@@ -66,7 +67,7 @@ export function newApplication(
 /**
  * Edits company, role, link and notes. Company must not be empty after trimming, and a
  * link, if there is one, must be http or https. Fields left out stay as they are; empty
- * notes are removed.
+ * notes and an empty "what I told them" are removed.
  */
 export function updateApplication(
   application: Application,
@@ -78,10 +79,12 @@ export function updateApplication(
   const errors = validateApplicationFields({ company, url })
   if (errors.length > 0) return { ok: false, error: errors }
 
-  const { notes: _notes, ...rest } = application
+  const { notes: _notes, toldThem: _toldThem, ...rest } = application
   const next: Application = { ...rest, company, role, url }
   const notes = changes.notes ?? application.notes
   if (notes !== undefined && notes.trim() !== '') next.notes = notes
+  const toldThem = changes.toldThem ?? application.toldThem
+  if (toldThem !== undefined && toldThem.trim() !== '') next.toldThem = toldThem
   return { ok: true, value: next }
 }
 

@@ -77,6 +77,21 @@ describe('reducer', () => {
   })
 
 
+  it('addCv keeps file details and createdAt', () => {
+    const file = { fileName: 'cv.pdf', size: 10, type: 'application/pdf' as const }
+    const after = reducer(stateWithData(), { type: 'addCv', id: 'cv2', name: 'Long', file, now: '2026-10-07T09:00:00.000Z' })
+    expect(after.cvs[1]).toEqual({ id: 'cv2', name: 'Long', createdAt: '2026-10-07T09:00:00.000Z', file })
+  })
+
+  it('linkCv links and unlinks an application, and ignores an unknown CV', () => {
+    const before = stateWithData()
+    const linked = reducer(before, { type: 'linkCv', applicationId: 'a1', cvId: 'cv1' })
+    expect(linked.applications[0]?.cvId).toBe('cv1')
+    const unlinked = reducer(linked, { type: 'linkCv', applicationId: 'a1', cvId: null })
+    expect('cvId' in (unlinked.applications[0] ?? {})).toBe(false)
+    expect(reducer(before, { type: 'linkCv', applicationId: 'a1', cvId: 'nope' })).toBe(before)
+  })
+
   it('reset removes the data and keeps the language', () => {
     const after = reducer(stateWithData(), { type: 'reset' })
     expect(after.applications).toEqual([])

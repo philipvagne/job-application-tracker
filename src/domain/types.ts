@@ -27,11 +27,24 @@ export interface Application {
   /** First time the application reached offer. Never cleared. */
   offerAt?: IsoDate
   notes?: string
+  /** What the user told the employer, as free text. */
+  toldThem?: string
 }
 
+/** Details of the PDF stored for a CV entry. The file itself lives in IndexedDB under the CV's id. */
+export interface CvFile {
+  fileName: string
+  size: number
+  type: 'application/pdf'
+}
+
+/** A CV entry. Never edited after it is added: a new version is a new entry. */
 export interface Cv {
   id: string
   name: string
+  createdAt?: IsoDate
+  /** Missing for a CV that is only a name. */
+  file?: CvFile
 }
 
 export interface Settings {

@@ -1,13 +1,18 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import {
   CLOSED_REASONS,
+  MAX_CV_FILE_BYTES,
+  MAX_FILE_NAME_LENGTH,
   applicationsThisWeek,
+  suggestCvName,
   type Application,
   type ClosedReason,
+  type Cv,
   type CvError,
   type Status,
 } from '../domain'
 import { useApp } from '../state/AppContext'
+import type { UploadErrorCode } from '../storage'
 import { AppliedRow, ClosedRow, ToApplyRow } from './ApplicationRows'
 import { ConfirmDialog } from './ConfirmDialog'
 import { EditDialog } from './EditDialog'
@@ -15,21 +20,29 @@ import { COMPANY_FIELD_ID, QuickAdd } from './QuickAdd'
 import type { MenuAction } from './RowMenu'
 
 const ADD_CV = '__add_cv__'
+const CV_ADD_BUTTON_ID = 'cv-add-button'
+const MAX_FILE_MB = MAX_CV_FILE_BYTES / (1024 * 1024)
+
+type FileErrorCode = Exclude<UploadErrorCode, 'name_required' | 'name_taken'>
 
 type Confirm = { kind: 'close' | 'delete'; application: Application } | null
 
 /** Quick add, the CV choice, the three lists and every dialog they open. */
 export function Tracker() {
-  const { t, language, state, actions } = useApp()
+  const { t, language, state, filesAvailable, actions } = useApp()
   const { applications, cvs, settings } = state
 
   const cvSelectId = useId()
   const cvErrorId = useId()
   const cvNameId = useId()
   const cvNameErrorId = useId()
+  const cvFileId = useId()
+  const cvFileHintId = useId()
+  const cvFileErrorId = useId()
   const reasonId = useId()
   const cvSelectRef = useRef<HTMLSelectElement>(null)
   const cvNameRef = useRef<HTMLInputElement>(null)
+  const cvFileRef = useRef<HTMLInputElement>(null)
 
   const [message, setMessage] = useState('')
   const [pickedCvId, setPickedCvId] = useState('')
@@ -38,6 +51,9 @@ export function Tracker() {
   const [cvForm, setCvForm] = useState<{ applyId: string | null } | null>(null)
   const [cvName, setCvName] = useState('')
   const [cvNameError, setCvNameError] = useState<CvError | null>(null)
+  const [cvFile, setCvFile] = useState<File | null>(null)
+  const [cvFileError, setCvFileError] = useState<FileErrorCode | null>(null)
+  const [cvBusy, setCvBusy] = useState(false)
   const [editing, setEditing] = useState<Application | null>(null)
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [closeReason, setCloseReason] = useState<ClosedReason>('no_reply')
@@ -91,11 +107,17 @@ export function Tracker() {
     setFocusIds(next)
   }
 
+  function openCvForm(applyId: string | null): void {
+    setCvName('')
+    setCvNameError(null)
+    setCvFile(null)
+    setCvFileError(null)
+    setCvForm({ applyId })
+  }
+
   function onApplied(application: Application): void {
     if (cvs.length === 0) {
-      setCvName('')
-      setCvNameError(null)
-      setCvForm({ applyId: application.id })
+      openCvForm(application.id)
       return
     }
     if (cvId === '') {
@@ -109,37 +131,77 @@ export function Tracker() {
   function onCvSelect(value: string): void {
     setCvSelectError(false)
     if (value === ADD_CV) {
-      setCvName('')
-      setCvNameError(null)
-      setCvForm({ applyId: null })
+      openCvForm(null)
       return
     }
     setPickedCvId(value)
   }
 
-  function onCvSubmit(event: FormEvent): void {
+  function onCvFileChange(file: File | null): void {
+    setCvFile(file)
+    setCvFileError(null)
+    if (file !== null && cvName.trim() === '') setCvName(suggestCvName(file.name))
+  }
+
+  async function onCvSubmit(event: FormEvent): Promise<void> {
     event.preventDefault()
+    if (cvBusy) return
     const pending = cvForm?.applyId ?? null
-    const result = actions.addCv(cvName)
-    if (!result.ok) {
-      setCvNameError(result.error === 'duplicate_id' ? 'name_taken' : result.error)
-      cvNameRef.current?.focus()
-      return
+    setCvNameError(null)
+    setCvFileError(null)
+
+    let created: { id: string; name: string }
+    if (cvFile !== null) {
+      setCvBusy(true)
+      const result = await actions.uploadCv(cvFile, cvName)
+      setCvBusy(false)
+      if (!result.ok) {
+        if (result.error === 'name_required' || result.error === 'name_taken') {
+          setCvNameError(result.error)
+          cvNameRef.current?.focus()
+        } else {
+          setCvFileError(result.error)
+          cvFileRef.current?.focus()
+        }
+        return
+      }
+      created = result.value
+    } else {
+      const result = actions.addCv(cvName)
+      if (!result.ok) {
+        setCvNameError(result.error === 'duplicate_id' ? 'name_taken' : result.error)
+        cvNameRef.current?.focus()
+        return
+      }
+      created = result.value
     }
-    setPickedCvId(result.value.id)
+
+    setPickedCvId(created.id)
     setCvSelectError(false)
     setCvForm(null)
-    setCvNameError(null)
+    setCvFile(null)
     const waiting = pending === null ? undefined : applications.find((a) => a.id === pending)
-    if (waiting !== undefined) applyNow(waiting, result.value.id)
-    else setFocusIds([cvSelectId])
+    if (waiting !== undefined) {
+      applyNow(waiting, created.id)
+    } else {
+      setMessage(t('announce.cvAdded', { name: created.name }))
+      setFocusIds([cvSelectId, CV_ADD_BUTTON_ID])
+    }
   }
 
   function cancelCvForm(): void {
     const pending = cvForm?.applyId ?? null
     setCvForm(null)
     setCvNameError(null)
-    setFocusIds(pending === null ? [cvSelectId] : [`apply-${pending}`])
+    setCvFileError(null)
+    setCvFile(null)
+    setFocusIds(pending === null ? [cvSelectId, CV_ADD_BUTTON_ID] : [`apply-${pending}`])
+  }
+
+  async function onOpenCv(cv: Cv): Promise<void> {
+    const result = await actions.openCv(cv.id)
+    if (result === 'ok') return
+    setMessage(result === 'missing' ? t('cvFile.missing') : t('cvFile.openFailed'))
   }
 
   function moveTo(application: Application, to: Exclude<Status, 'closed'>): void {
@@ -217,6 +279,10 @@ export function Tracker() {
   })
   const cvNameErrorText =
     cvNameError === 'name_taken' ? t('cv.nameTaken') : cvNameError === null ? '' : t('cv.nameRequired')
+  const cvFileErrorText =
+    cvFileError === null
+      ? ''
+      : t(`cvFile.error.${cvFileError}`, { max: cvFileError === 'name_too_long' ? MAX_FILE_NAME_LENGTH : MAX_FILE_MB })
 
   return (
     <div className="tracker">
@@ -228,6 +294,94 @@ export function Tracker() {
 
       <p className="week">{weekText}</p>
 
+      <section className="cv-picker" aria-label={t('cv.label')}>
+        {cvs.length > 0 ? (
+          <div className="field">
+            <label htmlFor={cvSelectId}>{t('cv.label')}</label>
+            <select
+              id={cvSelectId}
+              ref={cvSelectRef}
+              className="input input--select"
+              value={cvId}
+              onChange={(e) => onCvSelect(e.target.value)}
+              aria-invalid={cvSelectError}
+              aria-describedby={cvSelectError ? cvErrorId : undefined}
+            >
+              {cvId === '' && <option value="">{t('cv.choose')}</option>}
+              {cvs.map((cv) => (
+                <option key={cv.id} value={cv.id}>
+                  {cv.name}
+                </option>
+              ))}
+              <option value={ADD_CV}>{t('cv.addOption')}</option>
+            </select>
+            <p id={cvErrorId} className="error">
+              {cvSelectError ? t('cv.required') : ''}
+            </p>
+          </div>
+        ) : (
+          cvForm === null && (
+            <>
+              <p className="hint">{t('cv.none')}</p>
+              <button type="button" id={CV_ADD_BUTTON_ID} className="btn" onClick={() => openCvForm(null)}>
+                {t('cv.addOption')}
+              </button>
+            </>
+          )
+        )}
+
+        {cvForm !== null && (
+          <form className="cv-form" onSubmit={(e) => void onCvSubmit(e)} noValidate>
+            {cvForm.applyId !== null && cvs.length === 0 && <p>{t('cv.firstPrompt')}</p>}
+            <div className="field">
+              <label htmlFor={cvNameId}>{t('cv.nameLabel')}</label>
+              <input
+                id={cvNameId}
+                ref={cvNameRef}
+                className="input"
+                type="text"
+                autoComplete="off"
+                value={cvName}
+                onChange={(e) => setCvName(e.target.value)}
+                aria-invalid={cvNameError !== null}
+                aria-describedby={cvNameError !== null ? cvNameErrorId : undefined}
+              />
+              <p id={cvNameErrorId} className="error">
+                {cvNameErrorText}
+              </p>
+            </div>
+            <div className="field">
+              <label htmlFor={cvFileId}>{t('cvFile.attach')}</label>
+              <input
+                id={cvFileId}
+                ref={cvFileRef}
+                className="input"
+                type="file"
+                accept=".pdf,application/pdf"
+                disabled={!filesAvailable}
+                onChange={(e) => onCvFileChange(e.target.files?.[0] ?? null)}
+                aria-invalid={cvFileError !== null}
+                aria-describedby={cvFileError !== null ? `${cvFileHintId} ${cvFileErrorId}` : cvFileHintId}
+              />
+              <p id={cvFileHintId} className="hint">
+                {filesAvailable ? t('cvFile.hint', { max: MAX_FILE_MB }) : t('cvFile.unavailable')}
+              </p>
+              <p id={cvFileErrorId} className="error">
+                {cvFileErrorText}
+              </p>
+            </div>
+            <div className="cv-form__actions">
+              <button type="submit" className="btn btn--primary" disabled={cvBusy}>
+                {cvForm.applyId !== null ? t('cv.saveAndApply') : t('cv.save')}
+              </button>
+              <button type="button" className="btn" onClick={cancelCvForm}>
+                {t('common.cancel')}
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+
       {applications.length === 0 ? (
         <section className="empty" aria-labelledby="empty-title">
           <h2 id="empty-title">{t('empty.title')}</h2>
@@ -235,67 +389,6 @@ export function Tracker() {
         </section>
       ) : (
         <>
-          <section className="cv-picker" aria-label={t('cv.label')}>
-            {cvs.length > 0 ? (
-              <div className="field">
-                <label htmlFor={cvSelectId}>{t('cv.label')}</label>
-                <select
-                  id={cvSelectId}
-                  ref={cvSelectRef}
-                  className="input input--select"
-                  value={cvId}
-                  onChange={(e) => onCvSelect(e.target.value)}
-                  aria-invalid={cvSelectError}
-                  aria-describedby={cvSelectError ? cvErrorId : undefined}
-                >
-                  {cvId === '' && <option value="">{t('cv.choose')}</option>}
-                  {cvs.map((cv) => (
-                    <option key={cv.id} value={cv.id}>
-                      {cv.name}
-                    </option>
-                  ))}
-                  <option value={ADD_CV}>{t('cv.addOption')}</option>
-                </select>
-                <p id={cvErrorId} className="error">
-                  {cvSelectError ? t('cv.required') : ''}
-                </p>
-              </div>
-            ) : (
-              cvForm === null && <p className="hint">{t('cv.none')}</p>
-            )}
-
-            {cvForm !== null && (
-              <form className="cv-form" onSubmit={onCvSubmit} noValidate>
-                {cvForm.applyId !== null && cvs.length === 0 && <p>{t('cv.firstPrompt')}</p>}
-                <div className="field">
-                  <label htmlFor={cvNameId}>{t('cv.nameLabel')}</label>
-                  <input
-                    id={cvNameId}
-                    ref={cvNameRef}
-                    className="input"
-                    type="text"
-                    autoComplete="off"
-                    value={cvName}
-                    onChange={(e) => setCvName(e.target.value)}
-                    aria-invalid={cvNameError !== null}
-                    aria-describedby={cvNameError !== null ? cvNameErrorId : undefined}
-                  />
-                  <p id={cvNameErrorId} className="error">
-                    {cvNameErrorText}
-                  </p>
-                </div>
-                <div className="cv-form__actions">
-                  <button type="submit" className="btn btn--primary">
-                    {cvForm.applyId !== null ? t('cv.saveAndApply') : t('cv.save')}
-                  </button>
-                  <button type="button" className="btn" onClick={cancelCvForm}>
-                    {t('common.cancel')}
-                  </button>
-                </div>
-              </form>
-            )}
-          </section>
-
           <section className="list-section" aria-labelledby="to-apply-title">
             <h2 id="to-apply-title">{t('tracker.toApply.title')}</h2>
             {toApply.length === 0 ? (
@@ -303,7 +396,14 @@ export function Tracker() {
             ) : (
               <ul className="rows">
                 {toApply.map((a) => (
-                  <ToApplyRow key={a.id} application={a} onApplied={() => onApplied(a)} onMenu={(action) => onMenu(a, action)} />
+                  <ToApplyRow
+                    key={a.id}
+                    application={a}
+                    cvs={cvs}
+                    onApplied={() => onApplied(a)}
+                    onMenu={(action) => onMenu(a, action)}
+                    onOpenCv={(cv) => void onOpenCv(cv)}
+                  />
                 ))}
               </ul>
             )}
@@ -316,7 +416,14 @@ export function Tracker() {
             ) : (
               <ul className="rows">
                 {applied.map((a) => (
-                  <AppliedRow key={a.id} application={a} cvs={cvs} now={now} onMenu={(action) => onMenu(a, action)} />
+                  <AppliedRow
+                    key={a.id}
+                    application={a}
+                    cvs={cvs}
+                    now={now}
+                    onMenu={(action) => onMenu(a, action)}
+                    onOpenCv={(cv) => void onOpenCv(cv)}
+                  />
                 ))}
               </ul>
             )}
@@ -329,7 +436,14 @@ export function Tracker() {
               </summary>
               <ul className="rows">
                 {closed.map((a) => (
-                  <ClosedRow key={a.id} application={a} onReopen={() => onReopen(a)} onMenu={(action) => onMenu(a, action)} />
+                  <ClosedRow
+                    key={a.id}
+                    application={a}
+                    cvs={cvs}
+                    onReopen={() => onReopen(a)}
+                    onMenu={(action) => onMenu(a, action)}
+                    onOpenCv={(cv) => void onOpenCv(cv)}
+                  />
                 ))}
               </ul>
             </details>
