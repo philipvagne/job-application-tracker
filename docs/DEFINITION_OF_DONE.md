@@ -14,7 +14,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 ## Version 1: what is in
 
 1. **Link-first quick add.** Paste a link, choose a CV from a dropdown, then "Save to To apply" or "Save as already applied" (the CV is optional for both; "No CV" is a valid choice). A link or a company name is enough; company, role and a note are optional extras behind a button. Without a company the list shows the website name from the link (nothing is fetched). A link already in the list gives a gentle warning with "Add anyway".
-2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. No server, no AI.
+2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. On a Platsbanken ad page it makes one request to Arbetsförmedlingen's open JobTech API for that ad and adds company, job title, occupation and last application date (a note, never auto-saved); if that fails it sends the link only. The app itself makes no network requests. No server, no AI. Sources are listed in `docs/DATA_SOURCES.md`.
 3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used, if any, is linked to the application and opens from its row.
 4. **Application record.** Link (opens from the row), CV file, notes, and dates.
 5. **Lists and statuses.** Status tabs: To apply, Applied, Interview, Offer and Closed (reason: no reply, not selected, declined offer; older entries keep their old reason). One list is shown at a time, with the count on each tab. The layout was decided from an approved mockup (docs/mockups/): tabs, with a "My CVs" column.
@@ -33,7 +33,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 
 - Accounts, login, sync between devices
 - Any server, database or paid service
-- AI features, summarising pages, or reading other websites' content
+- AI features, summarising pages, or reading other websites' content (the one exception is the bookmarklet's single request to the JobTech API on Platsbanken ad pages)
 - Email or calendar integration
 - A browser extension (the bookmarklet covers capture)
 - Scraping or searching for jobs
@@ -64,7 +64,7 @@ The project is finished when every line below is true.
 - [ ] A CV entry and its file can be deleted, with a confirmation, before release.
 - [ ] Unit tests pass for reminders, statistics per CV, file validation, and the import and export round trip, and the GitHub Action is green.
 - [ ] Swedish and English are both complete, with no missing text.
-- [ ] The Network tab shows no data leaving the browser.
+- [ ] The Network tab on the app's own tab shows no data leaving the browser. (The bookmarklet's one request to the JobTech API shows in the Platsbanken tab, not in the app.)
 - [ ] It works with the keyboard alone and has visible focus states.
 - [ ] I used it for one real week of applications and fixed the three biggest annoyances.
 - [ ] The README has a one-paragraph pitch, screenshots, the privacy stance, known limits and how to run it.

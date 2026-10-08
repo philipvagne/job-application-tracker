@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { applicationTitle, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
+import { applicationTitle, buildAddNote, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
 import type { IncomingAdd } from '../state/incomingAdd'
 
@@ -26,7 +26,7 @@ interface QuickAddProps {
 }
 
 /** What the card says about a job from the bookmarklet: it was filled in, or the link could not be read. */
-type Notice = { kind: 'info'; host: string } | { kind: 'problem' }
+type Notice = { kind: 'info'; host: string; outdatedBookmark: boolean } | { kind: 'problem' }
 
 function BookmarkIcon() {
   return (
@@ -111,13 +111,14 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
     setErrors([])
     setDuplicate(null)
     if (incoming.result.kind === 'prefill') {
-      const { link: nextLink, company: nextCompany, role: nextRole } = incoming.result.prefill
-      setLink(nextLink)
-      setCompany(nextCompany)
-      setRole(nextRole)
-      setNotes('')
-      if (nextCompany !== '' || nextRole !== '') setMoreOpen(true)
-      setNotice({ kind: 'info', host: hostOf(nextLink) ?? nextLink })
+      const { prefill } = incoming.result
+      const nextNote = buildAddNote(prefill, { occupation: t('quickAdd.noteOccupation'), deadline: t('quickAdd.noteDeadline') })
+      setLink(prefill.link)
+      setCompany(prefill.company)
+      setRole(prefill.role)
+      setNotes(nextNote)
+      if (prefill.company !== '' || prefill.role !== '' || nextNote !== '') setMoreOpen(true)
+      setNotice({ kind: 'info', host: hostOf(prefill.link) ?? prefill.link, outdatedBookmark: prefill.outdatedBookmark })
       setFocusSave((n) => n + 1)
     } else {
       setNotice({ kind: 'problem' })
@@ -247,6 +248,12 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
                 <span className="callout__text">
                   {t('quickAdd.fromBookmarklet')} {t('quickAdd.fromBookmarkletHost')} <strong>{notice.host}</strong>
                 </span>
+              </p>
+            )}
+            {notice?.kind === 'info' && notice.outdatedBookmark && (
+              <p className="callout callout--info">
+                <BookmarkIcon />
+                <span className="callout__text">{t('quickAdd.bookmarkOutdated')}</span>
               </p>
             )}
           </div>

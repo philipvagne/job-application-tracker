@@ -15,7 +15,7 @@ Read `docs/DEFINITION_OF_DONE.md` before every pass. It decides scope. If anythi
 
 ## Hard rules
 
-1. **No network requests, ever.** No fetch, XHR, analytics, tracking, or fonts and scripts loaded from a CDN. Use system fonts or self-hosted ones. The privacy promise is that data never leaves the browser.
+1. **The app makes no network requests, ever.** No fetch, XHR, analytics, tracking, or fonts and scripts loaded from a CDN, and `connect-src 'none'` in `public/_headers` stays. Use system fonts or self-hosted ones. The privacy promise is that data never leaves the browser. The one exception is not in the app: the bookmarklet, running on a Platsbanken ad page, makes a single request to Arbetsförmedlingen's open JobTech API (`https://jobsearch.api.jobtechdev.se/ad/<id>`). Nothing else, nothing from other sites, nothing that sends page content.
 2. **All user data lives in the browser** behind a storage interface in `src/storage/`. Components never touch localStorage or IndexedDB directly.
 3. **Logic is pure and testable.** Everything about statuses, reminders, reply statistics and import/export lives in `src/domain/` as plain TypeScript functions with no React or DOM imports. Anything that depends on the current time takes `now` as a parameter.
 4. **Untrusted input.** Text arriving from a URL, a pasted link or an imported file is shown as plain text, never as HTML, and imported files are validated before use.

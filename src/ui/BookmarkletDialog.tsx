@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { buildBookmarklet, isLocalAddress } from '../domain'
+import { CURRENT_BOOKMARK_VERSION, buildBookmarklet, isLocalAddress } from '../domain'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
 
@@ -24,7 +24,9 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
   const [copy, setCopy] = useState<CopyState>('idle')
 
   const appUrl = `${window.location.origin}/`
-  const code = useMemo(() => buildBookmarklet(appUrl), [appUrl])
+  const boxOpen = t('bookmarklet.boxOpen')
+  const boxClose = t('bookmarklet.boxClose')
+  const code = useMemo(() => buildBookmarklet(appUrl, { open: boxOpen, close: boxClose }), [appUrl, boxOpen, boxClose])
   const local = isLocalAddress(appUrl)
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
       </h2>
       <div className="dialog__body">
         <p>{t('bookmarklet.intro')}</p>
+        <p>{t('bookmarklet.platsbanken')}</p>
         {code === null ? (
           <p className="note">{t('bookmarklet.unavailable')}</p>
         ) : (
@@ -106,6 +109,7 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
             <p className="hint">{t('bookmarklet.address', { address: appUrl })}</p>
             {local && <p className="banner banner--warn bookmarklet__local">{t('bookmarklet.local')}</p>}
             <p className="hint">{t('bookmarklet.limits')}</p>
+            <p className="hint">{t('bookmarklet.version', { version: String(CURRENT_BOOKMARK_VERSION) })}</p>
           </>
         )}
       </div>

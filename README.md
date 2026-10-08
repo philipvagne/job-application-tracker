@@ -6,7 +6,7 @@ Live: https://job-application-tracker.philipv-agne.workers.dev. The address is p
 
 ## Privacy
 
-The app makes no network requests at all: no analytics, no tracking, no fonts or scripts from other sites. Your applications are stored in the browser (localStorage), and your CV files in the browser's IndexedDB. "Delete all my data" in the settings removes everything, including the files. Links you save are only shown as text, and opened in a new tab when you click them.
+The app itself makes no network requests at all (its content security policy forbids them): no analytics, no tracking, no fonts or scripts from other sites. Your applications are stored in the browser (localStorage), and your CV files in the browser's IndexedDB. "Delete all my data" in the settings removes everything, including the files. Links you save are only shown as text, and opened in a new tab when you click them. The one exception is outside the app: on a Platsbanken ad page the bookmarklet asks Arbetsförmedlingen's open API for that ad (see "The bookmarklet").
 
 ## Run it
 
@@ -22,7 +22,7 @@ npm run preview    # serves dist/ with the same security headers as the live sit
 
 ## Prefilling a job from the address (for the bookmarklet, and for testing)
 
-Opening the app with `/#add=1&v=1&u=<link>&jo=<company>&jt=<role>` (values URL-encoded) fills the quick-add card; nothing is saved until you press save. Only `u` is required and must be an http(s) link; `v` must be `1`; `jo` and `jt` are cut at 200 characters; `dt` (page title) is accepted but not used yet. HTML tags in `jo` and `jt` are removed and entities decoded once. The fragment is removed from the address after it has been read. The bookmarklet that sends this is described in the next section.
+Opening the app with `/#add=1&v=1&bv=2&u=<link>&jo=<company>&jt=<role>&oc=<occupation>&dl=<yyyy-mm-dd>` (values URL-encoded) fills the quick-add card; nothing is saved until you press save. Only `u` is required and must be an http(s) link; `v` must be `1`; `jo`, `jt` and `oc` are cut at 200 characters; `dl` must be a real date or it is ignored; the occupation and date become a note ("Yrke: …", "Sista ansökningsdag: …") in the notes field; `bv` is the bookmark version (a missing or older one makes the card say the bookmark should be made again); `dt` (page title) is accepted but not used yet. HTML tags in `jo`, `jt` and `oc` are removed and entities decoded once. The fragment is removed from the address after it has been read. The bookmarklet that sends this is described in the next section.
 
 ## The bookmarklet
 
@@ -30,9 +30,13 @@ The side column has "Add from a job ad". It shows a link to drag to the bookmark
 
 **What it does.** Clicked on a job page, it opens this app in a new tab with the address described above. The card is filled in and you check it and save yourself.
 
-**What it reads.** The page address (without its `#` part), the `title` and the company of a `JobPosting` block in the page's structured data (`application/ld+json`), and the page title. It does not guess a job title or company from the page title or the page text.
+**What it reads.** It runs a short list of adapters, each filling only what is still empty. (1) On a Platsbanken ad page (`arbetsformedlingen.se/platsbanken/annonser/<digits>`) it asks Arbetsförmedlingen's open JobTech API for the ad and reads only the company, headline, occupation, last application date and whether the ad is removed; the saved link is the clean ad address. (2) The `title` and company of a `JobPosting` block in the page's structured data (`application/ld+json`). (3) The page title. It does not guess a job title or company from the page title or the page text. On LinkedIn and many other sites only the link comes along.
 
-**What it never does.** No network requests, no changes to the page, no cookies or storage, no reading of the page text, and nothing is saved until you press save. On a page that is not http(s) it opens nothing. The new tab is opened without a link back to the page (`noopener,noreferrer`).
+**Where the Platsbanken data comes from.** Arbetsförmedlingen's open JobTech JobSearch API (`https://jobsearch.api.jobtechdev.se/ad/<id>`). The request is made by the bookmark, from the Platsbanken page you are on, with no cookies and no referrer, and gives up after 2.5 seconds; the app itself still makes no network requests. If the request fails, only the link and page title are sent. The ad is saved as a note, never automatically. See `docs/DATA_SOURCES.md`; the terms of use still need to be checked before the app is promoted publicly.
+
+**What it never does.** No network request except the one to the JobTech API on a Platsbanken ad page, no cookies or storage, no reading of the page text, no changes to the page (see the next paragraph for the one box), and nothing is saved until you press save. On a page that is not http(s) it opens nothing. The new tab is opened without a link back to the page (`noopener,noreferrer`). A browser only lets a bookmark open a tab for a few seconds after the click, which is why the wait for the API is limited to 2.5 seconds. If the click has run out anyway, the bookmark shows a small box in the corner of the page with a link to the tracker (and a close button) instead of opening it; nothing else on the page is touched.
+
+**Bookmark version.** The current version is 2 (shown in the dialog). A bookmark made before version 2 still works, but only version 2 does the Platsbanken lookup, and the quick-add card says so when a job arrives from an older bookmark. Make it again from "Add from a job ad" to update; the tracker is kept up to date, the bookmark only changes when it has to.
 
 **Known limits.** Some sites block bookmarklets with a strict content security policy, and some pages have no structured job data (then only the link comes along). If a job ad sits in a frame from another site, the bookmarklet sees the outer page. Very long text is cut. If the app address changes, the bookmark has to be made again.
 
