@@ -25,6 +25,7 @@ import {
   type Status,
 } from '../domain'
 import { useApp } from '../state/AppContext'
+import type { IncomingAdd } from '../state/incomingAdd'
 import type { UploadErrorCode } from '../storage'
 import { AppliedRow, ClosedRow, ToApplyRow } from './ApplicationRows'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -53,7 +54,13 @@ type FileErrorCode = Exclude<UploadErrorCode, 'name_required' | 'name_taken'>
 type Confirm = { kind: 'close' | 'delete'; application: Application } | null
 
 /** Quick add, the CV choice, the status tabs, the CV column and every dialog they open. */
-export function Tracker() {
+interface TrackerProps {
+  /** A job from the bookmarklet, waiting to fill the quick-add card. */
+  incomingAdd: IncomingAdd | null
+  onAddHandled: () => void
+}
+
+export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
   const { t, language, state, preferences, filesAvailable, actions } = useApp()
   const { applications, cvs, settings } = state
 
@@ -442,6 +449,8 @@ export function Tracker() {
         heading={firstVisit ? t('welcome.addTitle') : t('quickAdd.title')}
         cvField={cvFieldNode}
         cvId={cvId}
+        incoming={incomingAdd}
+        onIncomingHandled={onAddHandled}
         onSaved={(application) => {
           setQuery('')
           setTab(application.status)

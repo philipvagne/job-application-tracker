@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { browserLanguages } from './i18n'
 import { AppProvider } from './state/AppContext'
+import { takeAddFromUrl } from './state/incomingAdd'
 import { loadApp } from './state/load'
 import { createBrowserFileStore, createBrowserStorage, createStateStore, createUiPreferences } from './storage'
 import './styles/fonts.css'
@@ -18,12 +19,14 @@ const storage = createBrowserStorage()
 const store = createStateStore(storage)
 const preferences = createUiPreferences(storage)
 const files = createBrowserFileStore()
+// An add payload in the address (from the bookmarklet) is read once here and removed from the address.
+const incomingAdd = takeAddFromUrl(window)
 const initial = loadApp(store, { navigatorLanguages: browserLanguages(navigator) })
 
 createRoot(root).render(
   <StrictMode>
     <AppProvider store={store} files={files} preferences={preferences} initial={initial}>
-      <App />
+      <App initialAdd={incomingAdd} />
     </AppProvider>
   </StrictMode>,
 )

@@ -20,6 +20,10 @@ npm run build      # checks, type-check and production build into dist/
 npm run preview    # serves dist/ with the same security headers as the live site
 ```
 
+## Prefilling a job from the address (for the bookmarklet, and for testing)
+
+Opening the app with `/#add=1&v=1&u=<link>&jo=<company>&jt=<role>` (values URL-encoded) fills the quick-add card; nothing is saved until you press save. Only `u` is required and must be an http(s) link; `v` must be `1`; `jo` and `jt` are cut at 200 characters; `dt` (page title) is accepted but not used yet. The fragment is removed from the address after it has been read.
+
 ## Deploy (Cloudflare Workers, static assets)
 
 The app is a static site, deployed as a Cloudflare Workers project that serves the `dist/` folder (see `wrangler.jsonc`; there is no Worker code). In the Cloudflare dashboard choose Workers & Pages, Create application, connect the GitHub repository, and enter:

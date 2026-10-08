@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { applicationTitle, decideQuickAdd, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
+import { applicationTitle, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
+import type { IncomingAdd } from '../state/incomingAdd'
 
 /** A fixed id, so other parts of the page can move focus to the link field. */
 export const LINK_FIELD_ID = 'quick-add-link'
@@ -12,12 +13,36 @@ interface QuickAddProps {
   cvField: ReactNode
   /** The CV in the picker; '' is "No CV". */
   cvId: string
+  /** A job from the bookmarklet. It fills the card (replacing what was there) but is never saved by itself. */
+  incoming: IncomingAdd | null
+  /** Called once the payload has been used, so it is not used again. */
+  onIncomingHandled: () => void
   /** A job was saved. The tracker shows its tab. */
   onSaved: (application: Application) => void
   /** Links were pasted and added. They all go to To apply. */
   onPasted: () => void
   /** Shows a short message in the page's polite status area. */
   onAnnounce: (message: string) => void
+}
+
+/** What the card says about a job from the bookmarklet: it was filled in, or the link could not be read. */
+type Notice = { kind: 'info'; host: string } | { kind: 'problem' }
+
+function BookmarkIcon() {
+  return (
+    <svg className="callout__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M5.5 3h9a.5.5 0 0 1 .5.5V17l-5-3.5L5 17V3.5a.5.5 0 0 1 .5-.5z" />
+    </svg>
+  )
+}
+
+function WarningIcon() {
+  return (
+    <svg className="callout__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M10 3 18 17H2L10 3z" />
+      <path d="M10 8.5v4M10 14.8v.1" />
+    </svg>
+  )
 }
 
 interface DuplicateWarning {
@@ -30,7 +55,7 @@ interface DuplicateWarning {
  * A link, a CV and two buttons. Enter in a field saves to To apply. Company, role and a note
  * are behind a button, and so is the paste box. Focus stays in the link field for the next one.
  */
-export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce }: QuickAddProps) {
+export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, onSaved, onPasted, onAnnounce }: QuickAddProps) {
   const { t, state, actions } = useApp()
   const headingId = `${LINK_FIELD_ID}-h`
   const companyId = useId()
@@ -48,6 +73,8 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
   const companyRef = useRef<HTMLInputElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
   const pasteRef = useRef<HTMLTextAreaElement>(null)
+  const saveRef = useRef<HTMLButtonElement>(null)
+  const handledIncoming = useRef(0)
 
   const [company, setCompany] = useState('')
   const [role, setRole] = useState('')
@@ -59,6 +86,10 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
   const [pasteResult, setPasteResult] = useState('')
   const [moreOpen, setMoreOpen] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
+  // The note about a job that came from the bookmarklet, until the user edits the link or saves.
+  const [notice, setNotice] = useState<Notice | null>(null)
+  // Goes up each time the primary button should get the focus (after a prefill).
+  const [focusSave, setFocusSave] = useState(0)
 
   // Opening a panel moves focus into it, as the old disclosure did for the company field.
   useEffect(() => {
@@ -67,6 +98,33 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
   useEffect(() => {
     if (pasteOpen) pasteRef.current?.focus()
   }, [pasteOpen])
+
+  // Declared after the effect above, so when a prefill opens the panel the primary button wins the focus.
+  useEffect(() => {
+    if (focusSave > 0) saveRef.current?.focus()
+  }, [focusSave])
+
+  // A job from the bookmarklet replaces what is in the card: old values must not mix with the new ad.
+  useEffect(() => {
+    if (incoming === null || handledIncoming.current === incoming.id) return
+    handledIncoming.current = incoming.id
+    setErrors([])
+    setDuplicate(null)
+    if (incoming.result.kind === 'prefill') {
+      const { link: nextLink, company: nextCompany, role: nextRole } = incoming.result.prefill
+      setLink(nextLink)
+      setCompany(nextCompany)
+      setRole(nextRole)
+      setNotes('')
+      if (nextCompany !== '' || nextRole !== '') setMoreOpen(true)
+      setNotice({ kind: 'info', host: hostOf(nextLink) ?? nextLink })
+      setFocusSave((n) => n + 1)
+    } else {
+      setNotice({ kind: 'problem' })
+      linkRef.current?.focus()
+    }
+    onIncomingHandled()
+  }, [incoming, onIncomingHandled, t])
 
   const linkInvalid = errors.includes('invalid_url')
   const linkMissing = errors.includes('company_or_link_required')
@@ -102,6 +160,7 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
       return
     }
     setDuplicate(null)
+    setNotice(null)
     setCompany('')
     setRole('')
     setNotes('')
@@ -154,6 +213,7 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
               onChange={(e) => {
                 setLink(e.target.value)
                 setDuplicate(null)
+                setNotice(null)
               }}
               aria-invalid={linkInvalid || linkMissing}
               aria-describedby={describedBy}
@@ -179,9 +239,28 @@ export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce
             </div>
           </div>
           <div className="add__cv">{cvField}</div>
+          {/* Both live regions are always in the page, so text added later is announced. */}
+          <div role="status" className="add__notice">
+            {notice?.kind === 'info' && (
+              <p className="callout callout--info">
+                <BookmarkIcon />
+                <span className="callout__text">
+                  {t('quickAdd.fromBookmarklet')} {t('quickAdd.fromBookmarkletHost')} <strong>{notice.host}</strong>
+                </span>
+              </p>
+            )}
+          </div>
+          <div role="alert" className="add__notice">
+            {notice?.kind === 'problem' && (
+              <p className="callout callout--problem">
+                <WarningIcon />
+                <span className="callout__text">{t('quickAdd.fromBookmarkletInvalid')}</span>
+              </p>
+            )}
+          </div>
         </div>
         <div className="add__actions">
-          <button type="submit" className="btn btn--primary">
+          <button ref={saveRef} type="submit" className="btn btn--primary">
             {t('quickAdd.saveToApply')}
           </button>
           <button type="button" className="btn" onClick={() => save('applied', false)}>
