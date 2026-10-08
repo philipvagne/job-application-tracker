@@ -7,7 +7,7 @@ export const ADD_PAYLOAD_VERSION = '1'
  * The newest bookmarklet version this tracker knows. The bookmarklet sends it as `bv`; a payload
  * without it, or with a lower number, comes from a bookmark that should be made again.
  */
-export const CURRENT_BOOKMARK_VERSION = 3
+export const CURRENT_BOOKMARK_VERSION = 4
 /** Company and role are cut at this many characters. */
 export const MAX_ADD_TEXT_LENGTH = 200
 /** A longer address fragment is not read at all. A link is at most 2048 characters, plus a few short fields. */
@@ -26,7 +26,7 @@ export interface AddPrefill {
 
 /**
  * The result of reading an address fragment like
- * `#add=1&v=1&bv=3&u=<link>&jo=<company>&jt=<role>&dt=<page title>`.
+ * `#add=1&v=1&bv=4&u=<link>&jo=<company>&jt=<role>`.
  * `none`: it is not an add payload at all (no `add` key), so leave the address alone.
  * `invalid`: it is one, but cannot be used.
  */
@@ -81,8 +81,8 @@ function single(params: URLSearchParams, name: string): string | null | undefine
 /**
  * Reads the address fragment (with or without the leading "#") that the bookmarklet sends.
  * Anything unexpected makes the whole payload invalid rather than half-used: a wrong version,
- * a repeated field, a missing or non-http(s) link. The page title (`dt`) is sent but not used yet.
- * Fields of older bookmarks that are no longer used (`oc`, `dl`) are ignored.
+ * a repeated field, a missing or non-http(s) link. Fields of older bookmarks
+ * that are no longer used (`dt`, `oc`, `dl`) are ignored.
  */
 export function readAddHash(hash: string): AddHashResult {
   const body = hash.startsWith('#') ? hash.slice(1) : hash

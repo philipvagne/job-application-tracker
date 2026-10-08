@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decideQuickAdd, type QuickAddInput } from './quickAdd'
+import { decideQuickAdd, focusAfterPrefill, type QuickAddInput } from './quickAdd'
 import type { Application } from './types'
 
 const existing: Application = {
@@ -51,5 +51,20 @@ describe('decideQuickAdd', () => {
 
   it('does not warn when only a company is given', () => {
     expect(decideQuickAdd(input({ url: '', company: 'Acme' }), [{ ...existing, url: '' }])).toEqual({ kind: 'ok' })
+  })
+})
+
+describe('focusAfterPrefill', () => {
+  it('focuses the save button when the job has a role (Platsbanken)', () => {
+    expect(focusAfterPrefill({ company: 'Humana AB', role: 'Vårdare' })).toBe('save')
+    expect(focusAfterPrefill({ company: '', role: 'Vårdare' })).toBe('save')
+  })
+
+  it('focuses the Role field when there is a company but no role', () => {
+    expect(focusAfterPrefill({ company: 'Acme AB', role: '' })).toBe('role')
+  })
+
+  it('focuses the Company field when there is only a link', () => {
+    expect(focusAfterPrefill({ company: '', role: '' })).toBe('company')
   })
 })

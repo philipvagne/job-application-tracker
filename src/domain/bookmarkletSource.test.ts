@@ -6,8 +6,8 @@ const APP = 'https://tracker.example.workers.dev/'
 const PAGE = 'https://careers.example.com/jobs/42?ref=a&b=c#apply'
 const LABELS = { open: 'Open in Job tracker', close: 'Close' }
 const API = 'https://jobsearch.api.jobtechdev.se/ad/'
-/** The most the bookmark address may be, in characters. It was 3500 before the Platsbanken adapter and the fallback box (about 6300 now); browsers accept far more. */
-const LENGTH_LIMIT = 6500
+/** The most the bookmark address may be, in characters. It was 3500 before the Platsbanken adapter and the fallback box (about 6000 now); browsers accept far more. */
+const LENGTH_LIMIT = 6200
 
 interface FakeResponse {
   status: number
@@ -220,31 +220,45 @@ describe('buildBookmarklet', () => {
 })
 
 describe('what the bookmarklet reads', () => {
-  it('takes title and company from a JobPosting block, the link without its fragment, and the page title', () => {
+  const LINK_ONLY = { link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: '', role: '' }
+
+  it('takes the company from a JobPosting block and the link without its fragment, and leaves the role empty', () => {
     const prefill = prefillOf(run({ blocks: [JSON.stringify(job())], title: 'Jobb - Acme' }))
-    expect(prefill).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: 'Acme AB', role: 'Frontendutvecklare' })
+    expect(prefill).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: 'Acme AB', role: '' })
   })
 
-  it('sends the page title as dt, from og:title when the page has no title', () => {
-    const withTitle = only(run({ title: 'Page title' })).url
-    expect(new URLSearchParams(withTitle.split('#')[1]).get('dt')).toBe('Page title')
-    const withOg = only(run({ title: '', ogTitle: 'Open graph title' })).url
-    expect(new URLSearchParams(withOg.split('#')[1]).get('dt')).toBe('Open graph title')
+  it('never reads a job title, page title or og:title as a role, and sends no page title', () => {
+    const opened = run({
+      blocks: [JSON.stringify(job({ title: 'Bli en del av vårt fantastiska team!' }))],
+      title: 'Slogan från sidtiteln',
+      ogTitle: 'Slogan från og:title',
+    })
+    const { url } = only(opened)
+    expect(url).not.toMatch(/fantastiska|Slogan|sidtiteln|og%3Atitle/i)
+    expect(prefillOf(opened).role).toBe('')
+    const names = Array.from(new URLSearchParams(url.slice(url.indexOf('#') + 1)).keys())
+    expect(names.sort()).toEqual(['add', 'bv', 'jo', 'u', 'v'])
+  })
+
+  it('sends only the link, the version and the company, with the bookmark version', () => {
+    const { url } = only(run({ blocks: [JSON.stringify(job())] }))
+    expect(url.startsWith(`${APP}#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION}&u=`)).toBe(true)
+    expect(fullPrefillOf([{ url }])).toMatchObject({ bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false })
   })
 
   it('finds a JobPosting inside @graph', () => {
     const block = JSON.stringify({ '@context': 'https://schema.org', '@graph': [{ '@type': 'WebSite', name: 'Site' }, job()] })
-    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ company: 'Acme AB', role: 'Frontendutvecklare' })
+    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ company: 'Acme AB', role: '' })
   })
 
   it('finds a JobPosting in a top-level array', () => {
     const block = JSON.stringify([{ '@type': 'BreadcrumbList' }, job()])
-    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ role: 'Frontendutvecklare' })
+    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ company: 'Acme AB' })
   })
 
   it('accepts @type as an array or a full schema.org address', () => {
-    expect(prefillOf(run({ blocks: [JSON.stringify(job({ '@type': ['Thing', 'JobPosting'] }))] }))).toMatchObject({ role: 'Frontendutvecklare' })
-    expect(prefillOf(run({ blocks: [JSON.stringify(job({ '@type': 'https://schema.org/JobPosting' }))] }))).toMatchObject({ role: 'Frontendutvecklare' })
+    expect(prefillOf(run({ blocks: [JSON.stringify(job({ '@type': ['Thing', 'JobPosting'] }))] }))).toMatchObject({ company: 'Acme AB' })
+    expect(prefillOf(run({ blocks: [JSON.stringify(job({ '@type': 'https://schema.org/JobPosting' }))] }))).toMatchObject({ company: 'Acme AB' })
   })
 
   it('reads the company when hiringOrganization is a plain string or a list', () => {
@@ -252,69 +266,75 @@ describe('what the bookmarklet reads', () => {
     expect(prefillOf(run({ blocks: [JSON.stringify(job({ hiringOrganization: [{ name: 'First AB' }, { name: 'Second AB' }] }))] })).company).toBe('First AB')
   })
 
-  it('leaves a missing company or title empty without guessing from the page title', () => {
-    const prefill = prefillOf(run({ blocks: [JSON.stringify({ '@type': 'JobPosting' })], title: 'Developer - Acme | Site' }))
-    expect(prefill).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: '', role: '' })
+  it('leaves a missing company empty without guessing from the page title', () => {
+    expect(prefillOf(run({ blocks: [JSON.stringify({ '@type': 'JobPosting' })], title: 'Developer - Acme | Site' }))).toEqual(LINK_ONLY)
   })
 
   it('opens with the link alone when the page has no JSON-LD', () => {
-    expect(prefillOf(run({}))).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: '', role: '' })
-    expect(prefillOf(run({ title: 'Developer - Acme | Site' }))).toMatchObject({ company: '', role: '' })
+    expect(prefillOf(run({}))).toEqual(LINK_ONLY)
+    expect(prefillOf(run({ title: 'Developer - Acme | Site', ogTitle: 'Acme' }))).toEqual(LINK_ONLY)
   })
 
   it('picks the one JobPosting among several blocks', () => {
     const blocks = [JSON.stringify({ '@type': 'Organization', name: 'Wrong AB' }), JSON.stringify({ '@type': 'WebSite' }), JSON.stringify(job())]
-    expect(prefillOf(run({ blocks }))).toMatchObject({ company: 'Acme AB', role: 'Frontendutvecklare' })
+    expect(prefillOf(run({ blocks }))).toMatchObject({ company: 'Acme AB' })
   })
 
   it('skips a block with broken JSON and still reads the next one', () => {
-    expect(prefillOf(run({ blocks: ['{ not json', '', JSON.stringify(job())] }))).toMatchObject({ role: 'Frontendutvecklare' })
-    expect(prefillOf(run({ blocks: ['{ not json'] })).role).toBe('')
+    expect(prefillOf(run({ blocks: ['{ not json', '', JSON.stringify(job())] }))).toMatchObject({ company: 'Acme AB' })
+    expect(prefillOf(run({ blocks: ['{ not json'] })).company).toBe('')
   })
 
   it('does not read a JobPosting buried deeper than a few levels', () => {
     let nested: unknown = job()
     for (let i = 0; i < 8; i++) nested = { '@graph': [nested] }
-    expect(prefillOf(run({ blocks: [JSON.stringify(nested)] })).role).toBe('')
+    expect(prefillOf(run({ blocks: [JSON.stringify(nested)] })).company).toBe('')
   })
 
   it('skips a huge block', () => {
-    expect(prefillOf(run({ blocks: [JSON.stringify(job({ description: 'x'.repeat(600_000) }))] })).role).toBe('')
+    expect(prefillOf(run({ blocks: [JSON.stringify(job({ description: 'x'.repeat(600_000) }))] })).company).toBe('')
   })
 
-  it('hands html entities and tags to the tracker, which cleans them', () => {
-    const block = JSON.stringify(job({ title: 'R&amp;D<br>Lead', hiringOrganization: { name: '<b>Acme</b> AB' } }))
-    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ role: 'R&D Lead', company: 'Acme AB' })
+  it('hands html entities and tags in the company to the tracker, which cleans them', () => {
+    const block = JSON.stringify(job({ hiringOrganization: { name: '<b>Acme</b> R&amp;D AB' } }))
+    expect(prefillOf(run({ blocks: [block] }))).toMatchObject({ company: 'Acme R&D AB', role: '' })
+  })
+
+  it('makes no request on a company page, and the same rule holds with or without a page fetch', async () => {
+    const withFetch = start({ blocks: [JSON.stringify(job())], fetch: () => Promise.reject(new Error('must not be called')) })
+    expect(withFetch.fetchCalls).toEqual([])
+    expect(prefillOf(withFetch.opened)).toEqual({ ...LINK_ONLY, company: 'Acme AB' })
   })
 })
 
 describe('limits', () => {
-  it('cuts very long fields so the address stays readable by the tracker', () => {
+  it('cuts a very long company so the address stays readable by the tracker', () => {
     const long = 'Å'.repeat(5000)
-    const opened = run({ blocks: [JSON.stringify(job({ title: long, hiringOrganization: { name: long } }))], title: long })
+    const opened = run({ blocks: [JSON.stringify(job({ hiringOrganization: { name: long } }))] })
     const hash = only(opened).url.slice(APP.length)
     expect(hash.length).toBeLessThanOrEqual(7500 + 40)
-    const prefill = prefillOf(opened)
-    expect(Array.from(prefill.role)).toHaveLength(200)
-    expect(Array.from(prefill.company)).toHaveLength(200)
+    expect(Array.from(prefillOf(opened).company)).toHaveLength(200)
   })
 
   it('never splits a character when it cuts', () => {
     const long = '😀'.repeat(400)
-    expect(Array.from(prefillOf(run({ blocks: [JSON.stringify(job({ title: long }))] })).role).every((c) => c === '😀')).toBe(true)
+    expect(Array.from(prefillOf(run({ blocks: [JSON.stringify(job({ hiringOrganization: { name: long } }))] })).company).every((c) => c === '😀')).toBe(true)
   })
 
-  it('leaves out a field that cannot be encoded and keeps the rest', () => {
-    const prefill = prefillOf(run({ blocks: [JSON.stringify(job({ title: 'ab\ud800cd' }))] }))
-    expect(prefill).toMatchObject({ role: '', company: 'Acme AB' })
+  it('leaves out a field that cannot be encoded and keeps the link', () => {
+    const prefill = prefillOf(run({ blocks: [JSON.stringify(job({ hiringOrganization: { name: 'ab\ud800cd' } }))] }))
+    expect(prefill).toEqual({ ...{ link: 'https://careers.example.com/jobs/42?ref=a&b=c', role: '' }, company: '' })
   })
 
-  it('drops the text fields rather than the link when the address would get too long', () => {
-    const link = `https://careers.example.com/${'%C3%A5'.repeat(330)}`
+  it('drops the company rather than the link when the address would get too long', () => {
+    // Every "{" takes three characters when encoded, so this link alone is about 6000 characters.
+    const link = `https://careers.example.com/${'{'.repeat(2000)}`
     const long = 'Å'.repeat(300)
-    const opened = run({ href: link, blocks: [JSON.stringify(job({ title: long, hiringOrganization: { name: long } }))], title: long })
-    expect(prefillOf(opened).link).toBe(link)
-    expect(only(opened).url.length - APP.length).toBeLessThan(8192)
+    const opened = run({ href: link, blocks: [JSON.stringify(job({ hiringOrganization: { name: long } }))] })
+    const { url } = only(opened)
+    expect(url).not.toContain('&jo=')
+    expect(url.length - APP.length).toBeLessThan(8192)
+    expect(new URLSearchParams(url.slice(url.indexOf('#') + 1)).get('u')).toBe(link)
   })
 
   it('cuts a very long link to origin and path, and gives up if that is too long as well', () => {
@@ -493,11 +513,11 @@ describe('Platsbanken: the ad address', () => {
     expect(fullPrefillOf(opened)).toMatchObject({ link: 'https://careers.example.com/jobs/42?ref=a&b=c' })
   })
 
-  it('leaves a company page as it was: JSON-LD works and no request is made', async () => {
+  it('reads the company from the page’s own data and makes no request', async () => {
     const started = start({ blocks: [JSON.stringify(job())], fetch: replyAd() })
     await settle()
     expect(started.fetchCalls).toEqual([])
-    expect(prefillOf(started.opened)).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: 'Acme AB', role: 'Frontendutvecklare' })
+    expect(prefillOf(started.opened)).toEqual({ link: 'https://careers.example.com/jobs/42?ref=a&b=c', company: 'Acme AB', role: '' })
   })
 })
 

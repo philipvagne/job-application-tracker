@@ -3,20 +3,23 @@ import { isHttpUrl } from './url'
 
 /**
  * The code the bookmarklet runs on a job page. It is deliberately dumb: a short list of adapters
- * each collect raw candidates (Platsbanken's own data, the title and company of a JobPosting
- * block, the page title) into the fields, and the tracker is opened with them in the address
- * fragment. The tracker cleans and checks everything (see readAddHash). Nothing on the page is
+ * each collect raw candidates (Platsbanken's own data, the company named in a JobPosting
+ * block) into the fields, and the tracker is opened with them in the address fragment. The tracker cleans and checks everything (see readAddHash). Nothing on the page is
  * changed and nothing is saved.
  *
  * The one network request: on a Platsbanken ad page (arbetsformedlingen.se/platsbanken/annonser/<digits>)
  * the Platsbanken adapter asks Arbetsförmedlingen's open JobTech API for that ad, and reads only
  * employer.name (the company) and occupation.label (the role; never the ad's headline). It gives up
  * after 2500 ms (the browser only allows opening a tab for a few seconds after the click), and on
- * any problem only the link and page title are sent. Nothing from the page is sent.
+ * any problem only the link is sent. Nothing from the page is sent.
  *
- * Adapters fill only fields that are still empty, in this order: Platsbanken, JSON-LD, page title.
- * On a Platsbanken ad page the JSON-LD adapter is skipped, so the role can only be the occupation.
- * A new site is a new function in that list.
+ * The same rule on every site: the link always, the company when the page states it, and the role
+ * only on Platsbanken (the occupation). No page title, job title or other text of the page is read
+ * as a role, because no code can tell a slogan from a role.
+ *
+ * Adapters fill only fields that are still empty, in this order: Platsbanken, JSON-LD (the company
+ * only). On a Platsbanken ad page the JSON-LD adapter is skipped. A new site is a new function in
+ * that list.
  *
  * Handwritten ES5, because it runs inside other people's pages. '__APP__' is replaced by the
  * tracker's address, '__OPEN__' and '__CLOSE__' by the words of the fallback box. Keep every
@@ -33,7 +36,7 @@ const SOURCE = String.raw`(function () {
   if (!/^https?:\/\//i.test(href)) return;
   if (href.length > 2048) href = location.origin + location.pathname;
   if (href.length > 2048) return;
-  var fields = { jt: '', jo: '', dt: '' }, onAd = false;
+  var fields = { jt: '', jo: '' }, onAd = false;
   function fill(name, value) {
     if (!fields[name] && value) fields[name] = value;
   }
@@ -126,15 +129,7 @@ const SOURCE = String.raw`(function () {
         if (text.length < 500000) job = find(JSON.parse(text), 0);
       } catch (e) {}
     }
-    if (job) {
-      fill('jt', clip(job.title, 300));
-      fill('jo', clip(orgName(job.hiringOrganization), 300));
-    }
-    next();
-  }
-  function titles(next) {
-    var meta = document.querySelector('meta[property="og:title"]');
-    fill('dt', clip(document.title, 300) || clip(meta && meta.getAttribute('content'), 300));
+    if (job) fill('jo', clip(orgName(job.hiringOrganization), 300));
     next();
   }
   function box(url) {
@@ -160,7 +155,7 @@ const SOURCE = String.raw`(function () {
     a.focus();
   }
   function finish() {
-    var u = enc(href), hash, order = ['jt', 'jo', 'dt'], i, e, ua;
+    var u = enc(href), hash, order = ['jt', 'jo'], i, e, ua;
     if (!u) return;
     hash = '#add=1&v=1&bv=' + BV + '&u=' + u;
     for (i = 0; i < order.length; i++) {
@@ -171,7 +166,7 @@ const SOURCE = String.raw`(function () {
     if (ua && ua.isActive === false) return box(APP + hash);
     window.open(APP + hash, '_blank', 'noopener,noreferrer');
   }
-  var adapters = [platsbanken, jsonld, titles];
+  var adapters = [platsbanken, jsonld];
   function step(i) {
     var called = false;
     function next() {

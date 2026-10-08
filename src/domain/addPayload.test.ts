@@ -230,3 +230,26 @@ describe('payloads from older bookmarks', () => {
     })
   })
 })
+
+describe('payloads from version 3 bookmarks', () => {
+  it('uses jt as the role as before, ignores dt, and marks the bookmark as outdated', () => {
+    const v3 = hash(
+      { u: 'https://jobb.example.se/jobb/42', jt: 'Bli en del av vårt fantastiska team!', jo: 'Exempel AB', dt: 'Jobb - Exempel' },
+      '#add=1&v=1&bv=3',
+    )
+    const result = readAddHash(v3)
+    expect(result).toEqual({
+      kind: 'prefill',
+      prefill: { link: 'https://jobb.example.se/jobb/42', company: 'Exempel AB', role: 'Bli en del av vårt fantastiska team!', bookmarkVersion: 3, outdatedBookmark: true },
+    })
+    expect(CURRENT_BOOKMARK_VERSION).toBeGreaterThan(3)
+  })
+
+  it('reads a current payload with only a link and a company as up to date, with an empty role', () => {
+    const current = hash({ u: 'https://jobb.example.se/jobb/42', jo: 'Exempel AB' }, `#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION}`)
+    expect(readAddHash(current)).toEqual({
+      kind: 'prefill',
+      prefill: { link: 'https://jobb.example.se/jobb/42', company: 'Exempel AB', role: '', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false },
+    })
+  })
+})

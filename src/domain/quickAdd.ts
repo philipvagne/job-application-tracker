@@ -35,3 +35,16 @@ export function decideQuickAdd(
   }
   return { kind: 'ok' }
 }
+
+/** Where focus goes after a job from the bookmark has filled the quick-add card. */
+export type PrefillFocus = 'save' | 'company' | 'role'
+
+/**
+ * A job with a role (Platsbanken) is ready to save, so the save button gets the focus. Without a
+ * role the user has to type one, so the Role field gets it; with no company either (only the
+ * link) the Company field comes first, as it is the first field in the panel.
+ */
+export function focusAfterPrefill(prefill: { company: string; role: string }): PrefillFocus {
+  if (prefill.role !== '') return 'save'
+  return prefill.company === '' ? 'company' : 'role'
+}

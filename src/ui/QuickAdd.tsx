@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { applicationTitle, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
+import { applicationTitle, decideQuickAdd, focusAfterPrefill, hostOf, type Application, type ApplicationFieldError, type PrefillFocus, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
 import type { IncomingAdd } from '../state/incomingAdd'
 import { WarningIcon } from './WarningIcon'
@@ -29,7 +29,7 @@ interface QuickAddProps {
 }
 
 /** What the card says about a job from the bookmarklet: it was filled in, or the link could not be read. */
-type Notice = { kind: 'info'; host: string; outdatedBookmark: boolean } | { kind: 'problem' }
+type Notice = { kind: 'info'; host: string; roleMissing: boolean; outdatedBookmark: boolean } | { kind: 'problem' }
 
 function BookmarkIcon() {
   return (
@@ -65,6 +65,7 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
   const pastePanelId = useId()
 
   const companyRef = useRef<HTMLInputElement>(null)
+  const roleRef = useRef<HTMLInputElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
   const pasteRef = useRef<HTMLTextAreaElement>(null)
   const saveRef = useRef<HTMLButtonElement>(null)
@@ -82,8 +83,8 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
   const [pasteOpen, setPasteOpen] = useState(false)
   // The note about a job that came from the bookmarklet, until the user edits the link or saves.
   const [notice, setNotice] = useState<Notice | null>(null)
-  // Goes up each time the primary button should get the focus (after a prefill).
-  const [focusSave, setFocusSave] = useState(0)
+  // Where focus goes after a prefill; the number is new each time, so the same target can be asked for again.
+  const [prefillFocus, setPrefillFocus] = useState<{ n: number; target: PrefillFocus } | null>(null)
 
   // Opening a panel moves focus into it, as the old disclosure did for the company field.
   useEffect(() => {
@@ -93,10 +94,12 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
     if (pasteOpen) pasteRef.current?.focus()
   }, [pasteOpen])
 
-  // Declared after the effect above, so when a prefill opens the panel the primary button wins the focus.
+  // Declared after the effect above, so when a prefill opens the panel the chosen target wins the focus.
   useEffect(() => {
-    if (focusSave > 0) saveRef.current?.focus()
-  }, [focusSave])
+    if (prefillFocus === null) return
+    const field = prefillFocus.target === 'save' ? saveRef.current : prefillFocus.target === 'role' ? roleRef.current : companyRef.current
+    field?.focus()
+  }, [prefillFocus])
 
   // A job from the bookmarklet replaces what is in the card: old values must not mix with the new ad.
   useEffect(() => {
@@ -110,9 +113,9 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
       setCompany(prefill.company)
       setRole(prefill.role)
       setNotes('')
-      if (prefill.company !== '' || prefill.role !== '') setMoreOpen(true)
-      setNotice({ kind: 'info', host: hostOf(prefill.link) ?? prefill.link, outdatedBookmark: prefill.outdatedBookmark })
-      setFocusSave((n) => n + 1)
+      setMoreOpen(true)
+      setNotice({ kind: 'info', host: hostOf(prefill.link) ?? prefill.link, roleMissing: prefill.role === '', outdatedBookmark: prefill.outdatedBookmark })
+      setPrefillFocus((previous) => ({ n: (previous?.n ?? 0) + 1, target: focusAfterPrefill(prefill) }))
     } else {
       setNotice({ kind: 'problem' })
       linkRef.current?.focus()
@@ -239,7 +242,7 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
               <p className="callout callout--info">
                 <BookmarkIcon />
                 <span className="callout__text">
-                  {t('quickAdd.fromBookmarklet')} {t('quickAdd.fromBookmarkletHost')} <strong>{notice.host}</strong>
+                  {t('quickAdd.fromBookmarklet')} {t('quickAdd.fromBookmarkletHost')} <strong>{notice.host}</strong>{notice.roleMissing && <>. {t('quickAdd.fillInRole')}</>}
                 </span>
               </p>
             )}
@@ -309,6 +312,7 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
               <label htmlFor={roleId}>{t('field.role')}</label>
               <input
                 id={roleId}
+                ref={roleRef}
                 className="input"
                 type="text"
                 autoComplete="off"
