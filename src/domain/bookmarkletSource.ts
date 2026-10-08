@@ -10,11 +10,12 @@ import { isHttpUrl } from './url'
  *
  * The one network request: on a Platsbanken ad page (arbetsformedlingen.se/platsbanken/annonser/<digits>)
  * the Platsbanken adapter asks Arbetsförmedlingen's open JobTech API for that ad, and reads only
- * employer.name, headline, occupation.label, application_deadline and removed. It gives up after
- * 2500 ms (the browser only allows opening a tab for a few seconds after the click), and on any
- * problem the bookmarklet carries on exactly as on any other page. Nothing from the page is sent.
+ * employer.name (the company) and occupation.label (the role; never the ad's headline). It gives up
+ * after 2500 ms (the browser only allows opening a tab for a few seconds after the click), and on
+ * any problem only the link and page title are sent. Nothing from the page is sent.
  *
  * Adapters fill only fields that are still empty, in this order: Platsbanken, JSON-LD, page title.
+ * On a Platsbanken ad page the JSON-LD adapter is skipped, so the role can only be the occupation.
  * A new site is a new function in that list.
  *
  * Handwritten ES5, because it runs inside other people's pages. '__APP__' is replaced by the
@@ -32,7 +33,7 @@ const SOURCE = String.raw`(function () {
   if (!/^https?:\/\//i.test(href)) return;
   if (href.length > 2048) href = location.origin + location.pathname;
   if (href.length > 2048) return;
-  var fields = { jt: '', jo: '', oc: '', dl: '', dt: '' };
+  var fields = { jt: '', jo: '', dt: '' }, onAd = false;
   function fill(name, value) {
     if (!fields[name] && value) fields[name] = value;
   }
@@ -52,6 +53,7 @@ const SOURCE = String.raw`(function () {
     var m = /^\/platsbanken\/annonser\/(\d{1,12})\/?$/.exec(location.pathname);
     if (!m || !/^https:/i.test(href) || !/^(www\.)?arbetsformedlingen\.se$/i.test(location.hostname)) return next();
     href = BOARD + m[1];
+    onAd = true;
     var over = false, timer, ctl = null;
     function end() {
       if (over) return;
@@ -60,18 +62,12 @@ const SOURCE = String.raw`(function () {
       try { next(); } catch (e) {}
     }
     function read(text) {
-      var j, o, h, d;
+      var j;
       if (text.length > 1000000) return;
       j = JSON.parse(text);
       if (!j || typeof j !== 'object') return;
-      o = j.employer && typeof j.employer === 'object' ? clip(j.employer.name, 300) : '';
-      h = clip(j.headline, 300);
-      if (!o && !h) return;
-      fill('jo', o);
-      fill('jt', h);
-      fill('oc', j.occupation && typeof j.occupation === 'object' ? clip(j.occupation.label, 300) : '');
-      d = !j.removed && typeof j.application_deadline === 'string' ? /^\d{4}-\d{2}-\d{2}/.exec(j.application_deadline) : null;
-      if (d) fill('dl', d[0]);
+      fill('jo', j.employer && typeof j.employer === 'object' ? clip(j.employer.name, 300) : '');
+      fill('jt', j.occupation && typeof j.occupation === 'object' ? clip(j.occupation.label, 300) : '');
     }
     try {
       if (typeof fetch !== 'function') return end();
@@ -121,6 +117,7 @@ const SOURCE = String.raw`(function () {
     return o && typeof o === 'object' ? o.name : '';
   }
   function jsonld(next) {
+    if (onAd) return next();
     var blocks = document.querySelectorAll('script[type="application/ld+json"]');
     var job = null, i, text;
     for (i = 0; i < blocks.length && !job; i++) {
@@ -163,7 +160,7 @@ const SOURCE = String.raw`(function () {
     a.focus();
   }
   function finish() {
-    var u = enc(href), hash, order = ['jt', 'jo', 'dl', 'oc', 'dt'], i, e, ua;
+    var u = enc(href), hash, order = ['jt', 'jo', 'dt'], i, e, ua;
     if (!u) return;
     hash = '#add=1&v=1&bv=' + BV + '&u=' + u;
     for (i = 0; i < order.length; i++) {

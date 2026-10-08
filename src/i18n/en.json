@@ -114,8 +114,6 @@
     "fromBookmarkletInvalid": "The link from the bookmarklet could not be read. Paste the link instead.",
     "bookmarkOutdated": "Your bookmark is from an older version, so details may be missing. Make a new one.",
     "makeNewBookmark": "Make a new bookmark",
-    "noteOccupation": "Occupation",
-    "noteDeadline": "Last application date",
     "linkLabel": "Link to the job ad",
     "linkHelp": "Enough to save the job. The app fetches nothing from the page; add company and role yourself, or let the bookmarklet bring them.",
     "cvLabel": "CV you send",
@@ -349,7 +347,7 @@
   },
   "bookmarklet": {
     "title": "Add from a job ad",
-    "intro": "Found a job online? Click the bookmark and the job lands in Job tracker with the link, company and job title filled in, so you don’t have to copy anything. You check and save it yourself.",
+    "intro": "Found a job online? Click the bookmark and the job lands in Job tracker with the link, company and role filled in, so you don’t have to copy anything. You check and save it yourself.",
     "worksBest": "Works best on Platsbanken and companies’ own career pages. On LinkedIn and some other sites only the link comes along.",
     "outdated": "Your bookmark is an older version. Make a new one to get everything working. This warning goes away the first time you use the new one.",
     "moreInfo": "More information",

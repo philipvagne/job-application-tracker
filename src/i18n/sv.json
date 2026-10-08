@@ -114,8 +114,6 @@
     "fromBookmarkletInvalid": "Länken från bokmärket kunde inte läsas. Klistra in länken i stället.",
     "bookmarkOutdated": "Ditt bokmärke är från en äldre version, så uppgifter kan saknas. Gör ett nytt.",
     "makeNewBookmark": "Gör nytt bokmärke",
-    "noteOccupation": "Yrke",
-    "noteDeadline": "Sista ansökningsdag",
     "linkLabel": "Länk till jobbannonsen",
     "linkHelp": "Räcker för att spara jobbet. Appen hämtar inget från sidan; företag och roll fyller du i själv, eller får med från bokmärket.",
     "cvLabel": "CV du skickar med",
@@ -349,7 +347,7 @@
   },
   "bookmarklet": {
     "title": "Lägg till från annonsen",
-    "intro": "Hittar du ett jobb på nätet? Klicka på bokmärket så hamnar jobbet i Jobbtracker med länk, företag och jobbtitel ifyllt, så du slipper skriva av. Du kontrollerar och sparar själv.",
+    "intro": "Hittar du ett jobb på nätet? Klicka på bokmärket så hamnar jobbet i Jobbtracker med länk, företag och roll ifyllt, så du slipper skriva av. Du kontrollerar och sparar själv.",
     "worksBest": "Fungerar bäst på Platsbanken och företagens egna karriärsidor. På LinkedIn och en del andra sidor följer bara länken med.",
     "outdated": "Ditt bokmärke är en äldre version. Gör ett nytt för att få allt att fungera. Varningen försvinner första gången du använder det nya.",
     "moreInfo": "Mer information",

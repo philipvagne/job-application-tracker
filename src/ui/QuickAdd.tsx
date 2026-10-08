@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { applicationTitle, buildAddNote, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
+import { applicationTitle, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
 import type { IncomingAdd } from '../state/incomingAdd'
 import { WarningIcon } from './WarningIcon'
@@ -106,12 +106,11 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
     setDuplicate(null)
     if (incoming.result.kind === 'prefill') {
       const { prefill } = incoming.result
-      const nextNote = buildAddNote(prefill, { occupation: t('quickAdd.noteOccupation'), deadline: t('quickAdd.noteDeadline') })
       setLink(prefill.link)
       setCompany(prefill.company)
       setRole(prefill.role)
-      setNotes(nextNote)
-      if (prefill.company !== '' || prefill.role !== '' || nextNote !== '') setMoreOpen(true)
+      setNotes('')
+      if (prefill.company !== '' || prefill.role !== '') setMoreOpen(true)
       setNotice({ kind: 'info', host: hostOf(prefill.link) ?? prefill.link, outdatedBookmark: prefill.outdatedBookmark })
       setFocusSave((n) => n + 1)
     } else {

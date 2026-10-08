@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import en from '../i18n/en.json'
-import sv from '../i18n/sv.json'
-import { CURRENT_BOOKMARK_VERSION, MAX_ADD_TEXT_LENGTH, buildAddNote, cleanAddText, cleanIsoDate, readAddHash } from './addPayload'
+import { CURRENT_BOOKMARK_VERSION, MAX_ADD_TEXT_LENGTH, cleanAddText, readAddHash } from './addPayload'
 
 const enc = encodeURIComponent
-/** What a payload without the new fields reads as. */
-const BASE = { occupation: '', deadline: '', bookmarkVersion: 1, outdatedBookmark: true }
+/** What a payload without a bookmark version reads as. */
+const BASE = { bookmarkVersion: 1, outdatedBookmark: true }
 const LINK = 'https://www.example.com/jobs/123?ref=a&b=c'
 
 function hash(fields: Record<string, string>, prefix = '#add=1&v=1'): string {
@@ -158,36 +156,8 @@ describe('cleanAddText', () => {
   })
 })
 
-describe('occupation, deadline and bookmark version', () => {
+describe('bookmark version', () => {
   const bv = `bv=${CURRENT_BOOKMARK_VERSION}`
-
-  it('reads the occupation and the deadline', () => {
-    const result = readAddHash(hash({ u: LINK, oc: 'Vårdare/Arbetshandledare/Boendestödjare', dl: '2026-11-08' }, `#add=1&v=1&${bv}`))
-    expect(result).toEqual({
-      kind: 'prefill',
-      prefill: { link: LINK, company: '', role: '', occupation: 'Vårdare/Arbetshandledare/Boendestödjare', deadline: '2026-11-08', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false },
-    })
-  })
-
-  it('cleans the occupation like company and role, and cuts it', () => {
-    const result = readAddHash(hash({ u: LINK, oc: '<b>Vårdare</b>&amp;Co' }))
-    expect(result).toMatchObject({ prefill: { occupation: 'Vårdare &Co' } })
-    const long = readAddHash(hash({ u: LINK, oc: 'o'.repeat(500) }))
-    expect(long).toMatchObject({ prefill: { occupation: 'o'.repeat(MAX_ADD_TEXT_LENGTH) } })
-  })
-
-  it('leaves out a deadline that is not a real date, without refusing the payload', () => {
-    for (const dl of ['', 'tomorrow', '2026-13-01', '2026-02-30', '2026-11-8', '2026-11-08T23:59:59', '<b>2026-11-08</b>', '08/11/2026']) {
-      expect(readAddHash(hash({ u: LINK, dl }))).toMatchObject({ kind: 'prefill', prefill: { deadline: '' } })
-    }
-    expect(readAddHash(hash({ u: LINK, dl: '2028-02-29' }))).toMatchObject({ prefill: { deadline: '2028-02-29' } })
-  })
-
-  it('is invalid when oc, dl or bv is given twice', () => {
-    expect(readAddHash(`${hash({ u: LINK, oc: 'A' })}&oc=B`)).toEqual({ kind: 'invalid' })
-    expect(readAddHash(`${hash({ u: LINK, dl: '2026-11-08' })}&dl=2026-11-09`)).toEqual({ kind: 'invalid' })
-    expect(readAddHash(`${hash({ u: LINK })}&bv=2&bv=2`)).toEqual({ kind: 'invalid' })
-  })
 
   it('treats a missing or old bookmark version as outdated, and the current or a newer one as fine', () => {
     const outdated = (prefix: string) => {
@@ -197,39 +167,66 @@ describe('occupation, deadline and bookmark version', () => {
     }
     expect(outdated('#add=1&v=1')).toBe(true)
     expect(outdated('#add=1&v=1&bv=1')).toBe(true)
+    expect(outdated(`#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION - 1}`)).toBe(true)
     expect(outdated('#add=1&v=1&bv=')).toBe(true)
     expect(outdated('#add=1&v=1&bv=abc')).toBe(true)
-    expect(outdated(`#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION}`)).toBe(false)
+    expect(outdated(`#add=1&v=1&${bv}`)).toBe(false)
     expect(outdated(`#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION + 1}`)).toBe(false)
   })
-})
 
-describe('cleanIsoDate', () => {
-  it('accepts real dates only', () => {
-    expect(cleanIsoDate('2026-11-08')).toBe('2026-11-08')
-    expect(cleanIsoDate(' 2026-11-08 ')).toBe('2026-11-08')
-    expect(cleanIsoDate('2026-00-10')).toBe('')
-    expect(cleanIsoDate('2027-02-29')).toBe('')
+  it('reads the version the bookmark sent, and 1 when it said nothing usable', () => {
+    const versionOf = (prefix: string) => {
+      const result = readAddHash(hash({ u: LINK }, prefix))
+      if (result.kind !== 'prefill') throw new Error(result.kind)
+      return result.prefill.bookmarkVersion
+    }
+    expect(versionOf('#add=1&v=1&bv=2')).toBe(2)
+    expect(versionOf(`#add=1&v=1&${bv}`)).toBe(CURRENT_BOOKMARK_VERSION)
+    expect(versionOf('#add=1&v=1')).toBe(1)
+    expect(versionOf('#add=1&v=1&bv=x')).toBe(1)
+  })
+
+  it('is invalid when bv is given twice', () => {
+    expect(readAddHash(`${hash({ u: LINK })}&bv=3&bv=3`)).toEqual({ kind: 'invalid' })
   })
 })
 
-describe('buildAddNote', () => {
-  const prefill = { occupation: 'Vårdare/Arbetshandledare/Boendestödjare', deadline: '2026-11-08' }
+describe('payloads from older bookmarks', () => {
+  const PB = 'https://arbetsformedlingen.se/platsbanken/annonser/31572415'
+  const HEADLINE = 'Vill du bli vår nya kollega? Vi söker boendestödjare till Basvägen LSS'
 
-  it('builds the note in Swedish', () => {
-    const labels = { occupation: sv.quickAdd.noteOccupation, deadline: sv.quickAdd.noteDeadline }
-    expect(buildAddNote(prefill, labels)).toBe('Yrke: Vårdare/Arbetshandledare/Boendestödjare\nSista ansökningsdag: 2026-11-08')
+  it('uses the headline in jt as the role, ignores oc and dl, and marks the bookmark as outdated (version 2)', () => {
+    const v2 = hash(
+      { u: PB, jt: HEADLINE, jo: 'Humana AB', oc: 'Vårdare/Arbetshandledare/Boendestödjare', dl: '2026-11-08', dt: 'Annons - Platsbanken' },
+      '#add=1&v=1&bv=2',
+    )
+    const result = readAddHash(v2)
+    expect(result).toEqual({
+      kind: 'prefill',
+      prefill: { link: PB, company: 'Humana AB', role: HEADLINE, bookmarkVersion: 2, outdatedBookmark: true },
+    })
+    // Nothing for a note or a deadline is carried over: the prefill has exactly these fields.
+    if (result.kind !== 'prefill') throw new Error(result.kind)
+    expect(Object.keys(result.prefill).sort()).toEqual(['bookmarkVersion', 'company', 'link', 'outdatedBookmark', 'role'])
   })
 
-  it('builds the note in English', () => {
-    const labels = { occupation: en.quickAdd.noteOccupation, deadline: en.quickAdd.noteDeadline }
-    expect(buildAddNote(prefill, labels)).toBe('Occupation: Vårdare/Arbetshandledare/Boendestödjare\nLast application date: 2026-11-08')
+  it('still accepts oc and dl given twice, or with nonsense, because they are not read', () => {
+    const v2 = `${hash({ u: PB, jo: 'Humana AB', oc: 'A', dl: 'not a date' }, '#add=1&v=1&bv=2')}&oc=B&dl=2026-01-01`
+    expect(readAddHash(v2)).toMatchObject({ kind: 'prefill', prefill: { company: 'Humana AB', outdatedBookmark: true } })
   })
 
-  it('leaves out what is not known, and is empty when nothing is', () => {
-    const labels = { occupation: 'Yrke', deadline: 'Sista ansökningsdag' }
-    expect(buildAddNote({ occupation: '', deadline: '2026-11-08' }, labels)).toBe('Sista ansökningsdag: 2026-11-08')
-    expect(buildAddNote({ occupation: 'Vårdare', deadline: '' }, labels)).toBe('Yrke: Vårdare')
-    expect(buildAddNote({ occupation: '', deadline: '' }, labels)).toBe('')
+  it('reads a version 1 payload with no bv the same way', () => {
+    expect(readAddHash(hash({ u: PB, jt: HEADLINE, jo: 'Humana AB' }))).toEqual({
+      kind: 'prefill',
+      prefill: { link: PB, company: 'Humana AB', role: HEADLINE, bookmarkVersion: 1, outdatedBookmark: true },
+    })
+  })
+
+  it('reads the current version as up to date, with the occupation as the role', () => {
+    const current = hash({ u: PB, jt: 'Vårdare/Arbetshandledare/Boendestödjare', jo: 'Humana AB' }, `#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION}`)
+    expect(readAddHash(current)).toEqual({
+      kind: 'prefill',
+      prefill: { link: PB, company: 'Humana AB', role: 'Vårdare/Arbetshandledare/Boendestödjare', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false },
+    })
   })
 })

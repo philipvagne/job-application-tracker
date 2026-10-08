@@ -6,8 +6,8 @@ const APP = 'https://tracker.example.workers.dev/'
 const PAGE = 'https://careers.example.com/jobs/42?ref=a&b=c#apply'
 const LABELS = { open: 'Open in Job tracker', close: 'Close' }
 const API = 'https://jobsearch.api.jobtechdev.se/ad/'
-/** The most the bookmark address may be, in characters. It was 3500 before the Platsbanken adapter and the fallback box (about 6600 now); browsers accept far more. */
-const LENGTH_LIMIT = 7000
+/** The most the bookmark address may be, in characters. It was 3500 before the Platsbanken adapter and the fallback box (about 6300 now); browsers accept far more. */
+const LENGTH_LIMIT = 6500
 
 interface FakeResponse {
   status: number
@@ -433,7 +433,7 @@ async function onPlatsbanken(fetchFn: FakeFetch | undefined, href = PB) {
 
 /** What the tracker reads when only the (canonical) link could be sent. */
 function expectLinkOnly(opened: Opened[]): void {
-  expect(fullPrefillOf(opened)).toEqual({ link: PB, company: '', role: '', occupation: '', deadline: '', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false })
+  expect(fullPrefillOf(opened)).toEqual({ link: PB, company: '', role: '', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false })
 }
 
 describe('Platsbanken: the ad address', () => {
@@ -478,7 +478,7 @@ describe('Platsbanken: the ad address', () => {
   ])('makes no request on %s', async (href) => {
     const { opened, fetchCalls } = await onPlatsbanken(replyAd(), href)
     expect(fetchCalls).toEqual([])
-    expect(fullPrefillOf(opened)).toMatchObject({ company: '', role: '', occupation: '', deadline: '' })
+    expect(fullPrefillOf(opened)).toMatchObject({ company: '', role: '' })
   })
 
   it('keeps the page address as the link when it is not an ad address', async () => {
@@ -509,14 +509,12 @@ describe('Platsbanken: the answer from the API', () => {
     vi.useRealTimers()
   })
 
-  it('fills company, role, occupation and deadline from a good answer', async () => {
+  it('fills the company and, as the role, the occupation from a good answer', async () => {
     const { opened, fetchCalls } = await onPlatsbanken(replyAd())
     expect(fullPrefillOf(opened)).toEqual({
       link: PB,
       company: 'Humana AB',
-      role: 'Vill du bli vår nya kollega? Vi söker boendestödjare till Basvägen LSS',
-      occupation: 'Vårdare/Arbetshandledare/Boendestödjare',
-      deadline: '2026-11-08',
+      role: 'Vårdare/Arbetshandledare/Boendestödjare',
       bookmarkVersion: CURRENT_BOOKMARK_VERSION,
       outdatedBookmark: false,
     })
@@ -524,6 +522,14 @@ describe('Platsbanken: the answer from the API', () => {
     expect(call.target).toBe('_blank')
     expect(call.features).toBe('noopener,noreferrer')
     expect(only(fetchCalls).init).toMatchObject({ credentials: 'omit', referrerPolicy: 'no-referrer', headers: { Accept: 'application/json' } })
+  })
+
+  it('never sends the ad headline or the deadline, and uses no other fields than jt, jo and dt', async () => {
+    const { opened } = await onPlatsbanken(replyAd({ headline: 'Unik rubrik XYZ', application_deadline: '2031-05-06T23:59:59' }))
+    const { url } = only(opened)
+    expect(url).not.toMatch(/XYZ|Unik|2031|05-06/)
+    const names = Array.from(new URLSearchParams(url.slice(url.indexOf('#') + 1)).keys())
+    expect(names.every((name) => ['add', 'v', 'bv', 'u', 'jt', 'jo', 'dt'].includes(name))).toBe(true)
   })
 
   it('opens as soon as the answer is in, not after the time limit', async () => {
@@ -535,32 +541,34 @@ describe('Platsbanken: the answer from the API', () => {
     expect(started.opened).toHaveLength(1)
   })
 
-  it('keeps company and role but drops the deadline for a removed ad', async () => {
+  it('treats a removed ad like any other: company and role are still filled in', async () => {
     const { opened } = await onPlatsbanken(replyAd({ removed: true, removed_date: '2026-09-01T00:00:00' }))
-    expect(fullPrefillOf(opened)).toMatchObject({ company: 'Humana AB', occupation: 'Vårdare/Arbetshandledare/Boendestödjare', deadline: '' })
+    expect(fullPrefillOf(opened)).toMatchObject({ company: 'Humana AB', role: 'Vårdare/Arbetshandledare/Boendestödjare' })
   })
 
-  it('leaves the deadline out when it is missing, null or not a date', async () => {
-    for (const application_deadline of [undefined, null, '', 'snart', '08-11-2026', 20261108]) {
-      const { opened } = await onPlatsbanken(replyAd({ application_deadline }))
-      expect(fullPrefillOf(opened)).toMatchObject({ company: 'Humana AB', deadline: '' })
+  it('leaves the role empty when the occupation is missing, and never falls back to the headline or the page title', async () => {
+    const headline = { headline: 'Unik rubrik XYZ' }
+    for (const occupation of [undefined, null, {}, { label: '' }, { label: '   ' }, { label: 5 }, { label: { text: 'x' } }, 'Vårdare', ['Vårdare']]) {
+      const { opened } = await onPlatsbanken(replyAd({ ...headline, occupation }))
+      expect(fullPrefillOf(opened)).toMatchObject({ link: PB, company: 'Humana AB', role: '' })
+      expect(only(opened).url).not.toMatch(/XYZ|Unik/)
     }
   })
 
-  it('works with a missing company, or a missing role, or a missing occupation', async () => {
-    expect(fullPrefillOf((await onPlatsbanken(replyAd({ employer: null }))).opened)).toMatchObject({ company: '', role: expect.stringContaining('boendestödjare') as string, deadline: '2026-11-08' })
-    expect(fullPrefillOf((await onPlatsbanken(replyAd({ employer: {} }))).opened)).toMatchObject({ company: '' })
-    expect(fullPrefillOf((await onPlatsbanken(replyAd({ headline: undefined }))).opened)).toMatchObject({ company: 'Humana AB', role: '' })
-    expect(fullPrefillOf((await onPlatsbanken(replyAd({ occupation: undefined }))).opened)).toMatchObject({ company: 'Humana AB', occupation: '' })
+  it('works with a missing company: the role is still the occupation', async () => {
+    for (const employer of [undefined, null, {}, { name: '' }, { name: 5 }, 'Humana AB']) {
+      const { opened } = await onPlatsbanken(replyAd({ employer }))
+      expect(fullPrefillOf(opened)).toMatchObject({ company: '', role: 'Vårdare/Arbetshandledare/Boendestödjare' })
+    }
   })
 
-  it('sends the link alone when there is neither company nor role', async () => {
-    const { opened } = await onPlatsbanken(replyAd({ employer: undefined, headline: undefined }))
+  it('sends the link alone when there is neither company nor occupation', async () => {
+    const { opened } = await onPlatsbanken(replyAd({ employer: undefined, occupation: undefined }))
     expectLinkOnly(opened)
   })
 
   it('ignores fields of the wrong type', async () => {
-    const { opened } = await onPlatsbanken(replyAd({ employer: { name: 5 }, headline: { text: 'x' }, occupation: 'Vårdare', application_deadline: { d: 1 } }))
+    const { opened } = await onPlatsbanken(replyAd({ employer: { name: 5 }, occupation: { label: { text: 'x' } }, headline: { text: 'x' } }))
     expectLinkOnly(opened)
   })
 
@@ -574,13 +582,13 @@ describe('Platsbanken: the answer from the API', () => {
 
   it('hands hostile text on as text, which the tracker turns into plain text', async () => {
     const { opened } = await onPlatsbanken(
-      replyAd({ headline: '<img src=x onerror=alert(1)>Dev', employer: { name: '<script>alert(1)</script>Evil&amp;Co' }, occupation: { label: '<b>Vård</b>‮' } }),
+      replyAd({ employer: { name: '<script>alert(1)</script>Evil&amp;Co' }, occupation: { label: '<img src=x onerror=alert(1)>Vård‮' }, headline: '<b>HEAD</b>' }),
     )
     const prefill = fullPrefillOf(opened)
-    expect(prefill.role).toBe('Dev')
+    expect(prefill.role).toBe('Vård')
     expect(prefill.company).not.toMatch(/[<>]/)
     expect(prefill.company).toContain('Evil&Co')
-    expect(prefill.occupation).toBe('Vård')
+    expect(only(opened).url).not.toMatch(/HEAD/)
   })
 
   it('cuts huge fields so the address stays readable by the tracker', async () => {
@@ -589,8 +597,6 @@ describe('Platsbanken: the answer from the API', () => {
     const prefill = fullPrefillOf(opened)
     expect(prefill.role).toHaveLength(200)
     expect(prefill.company).toHaveLength(200)
-    expect(prefill.occupation).toHaveLength(200)
-    expect(prefill.deadline).toBe('2026-11-08')
   })
 
   it('does not read an answer that is far too big', async () => {
@@ -598,10 +604,15 @@ describe('Platsbanken: the answer from the API', () => {
     expectLinkOnly(opened)
   })
 
-  it('uses JSON-LD on the page for what the API did not give', async () => {
-    const started = start({ href: PB, blocks: [JSON.stringify(job())], fetch: replyAd({ employer: undefined }) })
+  it('does not use the page’s own job data on an ad page, so the role can only be the occupation', async () => {
+    const withJobData = [JSON.stringify(job({ title: 'Rubrik från sidan' }))]
+    const missing = start({ href: PB, blocks: withJobData, fetch: replyAd({ occupation: undefined }) })
     await settle()
-    expect(fullPrefillOf(started.opened)).toMatchObject({ company: 'Acme AB', role: expect.stringContaining('boendestödjare') as string })
+    expect(fullPrefillOf(missing.opened)).toMatchObject({ company: 'Humana AB', role: '' })
+    const failed = start({ href: PB, blocks: withJobData, fetch: reply('', 500) })
+    await settle()
+    expectLinkOnly(failed.opened)
+    expect(only(failed.opened).url).not.toMatch(/Acme|Rubrik/)
   })
 })
 

@@ -7,8 +7,8 @@ export const ADD_PAYLOAD_VERSION = '1'
  * The newest bookmarklet version this tracker knows. The bookmarklet sends it as `bv`; a payload
  * without it, or with a lower number, comes from a bookmark that should be made again.
  */
-export const CURRENT_BOOKMARK_VERSION = 2
-/** Company, role and occupation are cut at this many characters. */
+export const CURRENT_BOOKMARK_VERSION = 3
+/** Company and role are cut at this many characters. */
 export const MAX_ADD_TEXT_LENGTH = 200
 /** A longer address fragment is not read at all. A link is at most 2048 characters, plus a few short fields. */
 const MAX_ADD_HASH_LENGTH = 8192
@@ -18,10 +18,6 @@ export interface AddPrefill {
   link: string
   company: string
   role: string
-  /** The occupation label of the ad (Platsbanken). Used for the note only. */
-  occupation: string
-  /** The last application day as yyyy-mm-dd, or '' when unknown or not a real date. Used for the note only. */
-  deadline: string
   /** The version of the bookmark that sent this (1 when it did not say). */
   bookmarkVersion: number
   /** True when that is older than the current version. */
@@ -30,7 +26,7 @@ export interface AddPrefill {
 
 /**
  * The result of reading an address fragment like
- * `#add=1&v=1&bv=2&u=<link>&jo=<company>&jt=<role>&oc=<occupation>&dl=<yyyy-mm-dd>&dt=<page title>`.
+ * `#add=1&v=1&bv=3&u=<link>&jo=<company>&jt=<role>&dt=<page title>`.
  * `none`: it is not an add payload at all (no `add` key), so leave the address alone.
  * `invalid`: it is one, but cannot be used.
  */
@@ -75,33 +71,6 @@ export function cleanAddText(raw: string): string {
   return Array.from(text).slice(0, MAX_ADD_TEXT_LENGTH).join('').trim()
 }
 
-/** The date as yyyy-mm-dd when it is a real calendar date, otherwise ''. */
-export function cleanIsoDate(raw: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim())
-  if (match === null) return ''
-  const [whole, year, month, day] = match
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
-  const real = date.getUTCFullYear() === Number(year) && date.getUTCMonth() === Number(month) - 1 && date.getUTCDate() === Number(day)
-  return real && whole !== undefined ? whole : ''
-}
-
-/** The labels for the note, already in the user's language (from the language files). */
-export interface AddNoteLabels {
-  occupation: string
-  deadline: string
-}
-
-/**
- * The note that is prefilled for a job from a bookmark: one line for the occupation and one for
- * the last application day, each only when known. Empty when there is nothing to say.
- */
-export function buildAddNote(prefill: Pick<AddPrefill, 'occupation' | 'deadline'>, labels: AddNoteLabels): string {
-  const lines: string[] = []
-  if (prefill.occupation !== '') lines.push(`${labels.occupation}: ${prefill.occupation}`)
-  if (prefill.deadline !== '') lines.push(`${labels.deadline}: ${prefill.deadline}`)
-  return lines.join('\n')
-}
-
 /** The single value of a parameter: null when it is absent, undefined when it is given more than once. */
 function single(params: URLSearchParams, name: string): string | null | undefined {
   const all = params.getAll(name)
@@ -113,8 +82,7 @@ function single(params: URLSearchParams, name: string): string | null | undefine
  * Reads the address fragment (with or without the leading "#") that the bookmarklet sends.
  * Anything unexpected makes the whole payload invalid rather than half-used: a wrong version,
  * a repeated field, a missing or non-http(s) link. The page title (`dt`) is sent but not used yet.
- * The occupation (`oc`) is cleaned like company and role; the deadline (`dl`) must be a real date
- * or it is left out (a bad date never makes the payload invalid).
+ * Fields of older bookmarks that are no longer used (`oc`, `dl`) are ignored.
  */
 export function readAddHash(hash: string): AddHashResult {
   const body = hash.startsWith('#') ? hash.slice(1) : hash
@@ -126,12 +94,10 @@ export function readAddHash(hash: string): AddHashResult {
   const link = single(params, 'u')
   const company = single(params, 'jo')
   const role = single(params, 'jt')
-  const occupation = single(params, 'oc')
-  const deadline = single(params, 'dl')
   const bookmarkVersion = single(params, 'bv')
   if (version !== ADD_PAYLOAD_VERSION) return { kind: 'invalid' }
   if (link === null || link === undefined || company === undefined || role === undefined) return { kind: 'invalid' }
-  if (occupation === undefined || deadline === undefined || bookmarkVersion === undefined) return { kind: 'invalid' }
+  if (bookmarkVersion === undefined) return { kind: 'invalid' }
 
   const sentBy = bookmarkVersionOfPayload(bookmarkVersion)
   const trimmedLink = link.trim()
@@ -142,8 +108,6 @@ export function readAddHash(hash: string): AddHashResult {
       link: trimmedLink,
       company: cleanAddText(company ?? ''),
       role: cleanAddText(role ?? ''),
-      occupation: cleanAddText(occupation ?? ''),
-      deadline: cleanIsoDate(deadline ?? ''),
       bookmarkVersion: sentBy,
       outdatedBookmark: isOutdatedBookmarkVersion(sentBy, CURRENT_BOOKMARK_VERSION),
     },
