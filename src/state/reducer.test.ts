@@ -13,6 +13,13 @@ function stateWithData(): AppState {
 }
 
 describe('reducer', () => {
+  it('setShowWeekSummary changes only that setting, and nothing when it is already so', () => {
+    const before = stateWithData()
+    const after = reducer(before, { type: 'setShowWeekSummary', show: true })
+    expect(after).toEqual({ ...before, settings: { ...before.settings, showWeekSummary: true } })
+    expect(reducer(after, { type: 'setShowWeekSummary', show: true })).toBe(after)
+  })
+
   it('replace swaps in the whole state', () => {
     const next = stateWithData()
     expect(reducer(createEmptyState(), { type: 'replace', state: next })).toBe(next)

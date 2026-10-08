@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { ApplicationFieldError } from '../domain'
 import { useApp } from '../state/AppContext'
 
@@ -6,18 +6,23 @@ import { useApp } from '../state/AppContext'
 export const COMPANY_FIELD_ID = 'quick-add-company'
 
 interface QuickAddProps {
+  /** The visible card label. */
+  heading: string
+  /** The CV choice, shown beside the link. It belongs to the tracker, which uses it when marking as applied. */
+  cvField: ReactNode
   /** Shows a short message in the page's polite status area. */
   onAnnounce: (message: string) => void
 }
 
 /** Company, role and link on one row. Enter submits; focus stays in Company for the next one. */
-export function QuickAdd({ onAnnounce }: QuickAddProps) {
+export function QuickAdd({ heading, cvField, onAnnounce }: QuickAddProps) {
   const { t, actions } = useApp()
   const companyId = COMPANY_FIELD_ID
   const roleId = useId()
   const linkId = useId()
   const companyErrorId = useId()
   const linkErrorId = useId()
+  const linkHelpId = useId()
   const pasteId = useId()
   const pasteHintId = useId()
   const pasteResultId = useId()
@@ -67,59 +72,65 @@ export function QuickAdd({ onAnnounce }: QuickAddProps) {
   }
 
   return (
-    <section className="quick-add" aria-labelledby={`${companyId}-h`}>
-      <h2 id={`${companyId}-h`} className="sr-only">
-        {t('quickAdd.title')}
+    <section className="card add" aria-labelledby={`${companyId}-h`}>
+      <h2 id={`${companyId}-h`} className="label">
+        {heading}
       </h2>
-      <form className="quick-add__form" onSubmit={onSubmit} noValidate>
-        <div className="field">
-          <label htmlFor={companyId}>{t('field.company')}</label>
-          <input
-            id={companyId}
-            ref={companyRef}
-            className="input"
-            type="text"
-            autoComplete="off"
-            required
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            aria-invalid={companyInvalid}
-            aria-describedby={companyInvalid ? companyErrorId : undefined}
-          />
-          <p id={companyErrorId} className="error">
-            {companyInvalid ? t('field.companyRequired') : ''}
-          </p>
+      <form onSubmit={onSubmit} noValidate>
+        <div className="add__grid">
+          <div className="field">
+            <label htmlFor={companyId}>{t('field.company')}</label>
+            <input
+              id={companyId}
+              ref={companyRef}
+              className="input"
+              type="text"
+              autoComplete="off"
+              required
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              aria-invalid={companyInvalid}
+              aria-describedby={companyInvalid ? companyErrorId : undefined}
+            />
+            <p id={companyErrorId} className="error">
+              {companyInvalid ? t('field.companyRequired') : ''}
+            </p>
+          </div>
+          <div className="field">
+            <label htmlFor={roleId}>{t('field.role')}</label>
+            <input
+              id={roleId}
+              className="input"
+              type="text"
+              autoComplete="off"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            />
+          </div>
+          <div className="field add__link">
+            <label htmlFor={linkId}>{t('quickAdd.linkLabel')}</label>
+            <input
+              id={linkId}
+              ref={linkRef}
+              className="input"
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              aria-invalid={linkInvalid}
+              aria-describedby={linkInvalid ? `${linkHelpId} ${linkErrorId}` : linkHelpId}
+            />
+            <p id={linkHelpId} className="hint">
+              {t('quickAdd.linkHelp')}
+            </p>
+            <p id={linkErrorId} className="error">
+              {linkInvalid ? t('field.linkInvalid') : ''}
+            </p>
+          </div>
+          <div className="add__cv">{cvField}</div>
         </div>
-        <div className="field">
-          <label htmlFor={roleId}>{t('field.role')}</label>
-          <input
-            id={roleId}
-            className="input"
-            type="text"
-            autoComplete="off"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor={linkId}>{t('field.link')}</label>
-          <input
-            id={linkId}
-            ref={linkRef}
-            className="input"
-            type="text"
-            inputMode="url"
-            autoComplete="off"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            aria-invalid={linkInvalid}
-            aria-describedby={linkInvalid ? linkErrorId : undefined}
-          />
-          <p id={linkErrorId} className="error">
-            {linkInvalid ? t('field.linkInvalid') : ''}
-          </p>
-        </div>
-        <div className="field quick-add__submit">
+        <div className="add__actions">
           <button type="submit" className="btn btn--primary">
             {t('quickAdd.add')}
           </button>

@@ -13,10 +13,6 @@
     "sv": "Svenska",
     "en": "English"
   },
-  "empty": {
-    "title": "Lägg till din första ansökan",
-    "body": "Dina ansökningar visas här, i en enkel lista."
-  },
   "footer": {
     "privacy": "Dina uppgifter stannar i den här webbläsaren."
   },
@@ -73,6 +69,11 @@
       "button": "Radera all min data",
       "done": "All din data har raderats.",
       "failed": "Dina uppgifter kunde inte raderas. Försök igen, eller rensa webbplatsens data i webbläsarens inställningar."
+    },
+    "weekSummary": {
+      "title": "Veckosammanfattning",
+      "label": "Visa veckosammanfattning",
+      "hint": "Visar hur många ansökningar du har markerat som sökta den här veckan."
     }
   },
   "confirm": {
@@ -101,10 +102,15 @@
   "quickAdd": {
     "title": "Lägg till ett jobb",
     "add": "Lägg till",
-    "added": "Tillagd: {company}"
+    "added": "Tillagd: {company}",
+    "linkLabel": "Länk till jobbannonsen",
+    "linkHelp": "Valfri. Med en länk kan du öppna annonsen från listan.",
+    "cvLabel": "CV du skickar med",
+    "cvHelp": "Används när du markerar jobbet som sökt. Så ser du senare vilket CV du använde.",
+    "noCv": "Inget CV än"
   },
   "paste": {
-    "summary": "Klistra in flera länkar",
+    "summary": "+ Lägg till flera länkar på en gång",
     "label": "En länk eller jobbtitel per rad",
     "hint": "Högst 200 rader. Tomma rader hoppas över.",
     "add": "Lägg till alla",
@@ -112,14 +118,12 @@
     "result": "Tillagda: {added}. Överhoppade rader: {skipped}."
   },
   "cv": {
-    "label": "CV för nästa ansökan",
     "choose": "Välj ett CV",
     "addOption": "Lägg till ett CV",
     "nameLabel": "CV-namn",
     "save": "Spara CV",
     "saveAndApply": "Spara och markera som sökt",
     "firstPrompt": "Vilket CV använder du? Ge det ett namn. Nästa gång väljer du det i en lista.",
-    "none": "Du får ge ett CV ett namn när du markerar din första ansökan som sökt.",
     "required": "Välj ett CV först.",
     "nameRequired": "Ange ett namn på CV:t.",
     "nameTaken": "Du har redan ett CV med det namnet."
@@ -130,15 +134,29 @@
       "other": "{count} ansökningar den här veckan"
     },
     "toApply": {
-      "title": "Att söka",
       "empty": "Inget väntar. Lägg till ett jobb ovan."
     },
     "applied": {
-      "title": "Sökta jobb",
       "empty": "Ansökningar du markerar som sökta visas här."
     },
     "closed": {
-      "title": "Avslutade ({count})"
+      "empty": "Inga avslutade ansökningar."
+    },
+    "tabs": {
+      "label": "Ansökningar efter status"
+    },
+    "tab": {
+      "to_apply": "Att söka",
+      "applied": "Sökta",
+      "interview": "Intervju",
+      "offer": "Erbjudande",
+      "closed": "Avslutade"
+    },
+    "interview": {
+      "empty": "Inga intervjuer än."
+    },
+    "offer": {
+      "empty": "Inga erbjudanden än."
     }
   },
   "status": {
@@ -241,7 +259,8 @@
       "fileName": "filnamn",
       "size": "storlek",
       "type": "typ",
-      "closedFrom": "avslutad från"
+      "closedFrom": "avslutad från",
+      "showWeekSummary": "veckosammanfattning"
     }
   },
   "importErrors": {
@@ -280,5 +299,46 @@
       "unavailable": "Den här webbläsaren kan inte lagra filer.",
       "unknown": "Något gick fel när filen skulle sparas. Inget lades till."
     }
+  },
+  "reply": {
+    "none": "Inget svar än",
+    "received": "Svar fått",
+    "followUp": "Dags att följa upp"
+  },
+  "cvPanel": {
+    "title": "Mina CV",
+    "add": "Lägg till",
+    "help": "Sparas bara i den här webbläsaren.",
+    "empty": "Inga CV tillagda än.",
+    "open": "Öppna",
+    "usedOne": "används i {count} ansökan",
+    "usedOther": "används i {count} ansökningar",
+    "pdf": "PDF · {size}",
+    "noFile": "Ingen fil bifogad",
+    "openFor": "Öppna CV: {name}"
+  },
+  "side": {
+    "lastBackup": "Senaste säkerhetskopia: {date}",
+    "export": "Exportera"
+  },
+  "welcome": {
+    "title": "Ett anteckningsblock för dina jobbansökningar",
+    "intro": "Du fyller i varje jobb själv, så att du alltid vet vad du har sökt, med vilket CV och när det är dags att följa upp. Inget hämtas eller skickas automatiskt. Det finns inga konton, och allt sparas bara i den här webbläsaren.",
+    "steps": "Så här fungerar det",
+    "step1": {
+      "title": "Lägg till ditt CV (valfritt)",
+      "body": "Ladda upp en PDF, så ser du alltid vilket CV du skickade till vilket jobb.",
+      "button": "Lägg till CV"
+    },
+    "step2": {
+      "title": "Lägg till ett jobb du vill söka",
+      "body": "Fyll i företaget och klistra gärna in länken till annonsen."
+    },
+    "step3": {
+      "title": "Markera när du har sökt",
+      "body": "Då räknar appen dagarna åt dig och visar när det är dags att följa upp."
+    },
+    "addTitle": "Lägg till ditt första jobb",
+    "tip": "Tips: exportera en säkerhetskopia då och då, så har du alltid en kopia av dina uppgifter."
   }
 }

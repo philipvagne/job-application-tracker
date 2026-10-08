@@ -58,6 +58,7 @@ export interface AppContextValue {
   actions: {
     setLanguage(language: Language): void
     setReminderDays(days: number): void
+    setShowWeekSummary(show: boolean): void
     /** Replaces everything with an imported, already validated state. */
     replaceState(state: AppState): void
     exportBackup(): void
@@ -203,6 +204,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
     () => ({
       setLanguage: (next) => commit({ type: 'setLanguage', language: next }),
       setReminderDays: (days) => commit({ type: 'setReminderDays', days }),
+      setShowWeekSummary: (show) => commit({ type: 'setShowWeekSummary', show }),
       replaceState: (next) => commit({ type: 'replace', state: next }),
 
       exportBackup() {

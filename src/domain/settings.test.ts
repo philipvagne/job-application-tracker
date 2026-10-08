@@ -7,6 +7,7 @@ import {
   resetState,
   setLanguage,
   setReminderDays,
+  setShowWeekSummary,
 } from './settings'
 import type { AppState } from './types'
 
@@ -86,5 +87,26 @@ describe('resetState', () => {
     expect(after.applications).toEqual([])
     expect(after.cvs).toEqual([])
     expect(after.settings).toEqual({ reminderDays: 14, language: 'sv' })
+  })
+})
+
+describe('setShowWeekSummary', () => {
+  it('turns the summary on and off without touching anything else', () => {
+    const before = withData()
+    const on = setShowWeekSummary(before, true)
+    expect(on.settings).toEqual({ ...before.settings, showWeekSummary: true })
+    expect(on.applications).toBe(before.applications)
+    expect(setShowWeekSummary(on, false).settings.showWeekSummary).toBe(false)
+    expect('showWeekSummary' in before.settings).toBe(false)
+  })
+
+  it('returns the same state when nothing changes', () => {
+    const on = setShowWeekSummary(withData(), true)
+    expect(setShowWeekSummary(on, true)).toBe(on)
+  })
+
+  it('is off again after "delete all my data"', () => {
+    const after = resetState(setShowWeekSummary(withData(), true))
+    expect(after.settings.showWeekSummary).toBeUndefined()
   })
 })

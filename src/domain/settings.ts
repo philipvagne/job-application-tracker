@@ -39,6 +39,13 @@ export function setReminderDays(state: AppState, days: number): AppState {
   return { ...state, settings: { ...state.settings, reminderDays: days } }
 }
 
+/** Turns the weekly summary on or off. */
+export function setShowWeekSummary(state: AppState, show: boolean): AppState {
+  return state.settings.showWeekSummary === show
+    ? state
+    : { ...state, settings: { ...state.settings, showWeekSummary: show } }
+}
+
 /** What is left after "delete all my data": defaults, but the interface language stays. */
 export function resetState(state: AppState): AppState {
   return {

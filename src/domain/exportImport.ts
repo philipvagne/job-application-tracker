@@ -101,6 +101,7 @@ function copySettings(s: Settings): Settings {
   const copy: Settings = { reminderDays: s.reminderDays, language: s.language }
   if (s.lastExportAt !== undefined) copy.lastExportAt = s.lastExportAt
   if (s.lastCvId !== undefined) copy.lastCvId = s.lastCvId
+  if (s.showWeekSummary !== undefined) copy.showWeekSummary = s.showWeekSummary
   return copy
 }
 
@@ -370,7 +371,7 @@ function validateSettings(
     return null
   }
   const before = errors.length
-  const { reminderDays, language, lastExportAt, lastCvId } = raw
+  const { reminderDays, language, lastExportAt, lastCvId, showWeekSummary } = raw
 
   if (reminderDays === undefined) {
     errors.push(error('missing_field', 'settings.reminderDays'))
@@ -399,10 +400,15 @@ function validateSettings(
     else if (!cvIds.has(lastCvId)) errors.push(error('unknown_cv', 'settings.lastCvId', { cvId: lastCvId }))
   }
 
+  if (showWeekSummary !== undefined && typeof showWeekSummary !== 'boolean') {
+    errors.push(wrongType('settings.showWeekSummary', 'boolean', showWeekSummary))
+  }
+
   if (errors.length > before) return null
   const settings: Settings = { reminderDays: reminderDays as number, language: language as Language }
   if (typeof lastExportAt === 'string') settings.lastExportAt = lastExportAt
   if (typeof lastCvId === 'string') settings.lastCvId = lastCvId
+  if (typeof showWeekSummary === 'boolean') settings.showWeekSummary = showWeekSummary
   return settings
 }
 

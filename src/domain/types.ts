@@ -66,6 +66,8 @@ export interface Settings {
   lastExportAt?: IsoDate
   /** The CV used for the latest application. Must be an existing CV when present. */
   lastCvId?: string
+  /** Show "N applications this week" above the lists. Absent means off. */
+  showWeekSummary?: boolean
 }
 
 export interface AppState {

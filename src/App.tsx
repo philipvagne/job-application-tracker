@@ -11,6 +11,7 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="backdrop" aria-hidden="true" />
       <header className="header">
         <h1 className="header__title">{t('app.title')}</h1>
         <div className="header__tools">
@@ -29,7 +30,7 @@ export function App() {
               </button>
             ))}
           </div>
-          <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
+          <button type="button" className="btn btn--small" onClick={() => setSettingsOpen(true)}>
             {t('settings.open')}
           </button>
         </div>
@@ -39,10 +40,6 @@ export function App() {
         <Banners />
         <Tracker />
       </main>
-
-      <footer className="footer">
-        <p>{t('footer.privacy')}</p>
-      </footer>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>

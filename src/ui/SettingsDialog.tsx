@@ -30,6 +30,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const reminderId = useId()
   const reminderHintId = useId()
   const reminderErrorId = useId()
+  const weekId = useId()
+  const weekHintId = useId()
   const importId = useId()
   const importHintId = useId()
 
@@ -172,6 +174,23 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               {reminderInvalid ? t('settings.reminder.error', range) : ''}
             </p>
           </div>
+        </section>
+
+        <section className="section" aria-labelledby={`${weekId}-h`}>
+          <h3 id={`${weekId}-h`}>{t('settings.weekSummary.title')}</h3>
+          <div className="check">
+            <input
+              id={weekId}
+              type="checkbox"
+              checked={state.settings.showWeekSummary === true}
+              onChange={(e) => actions.setShowWeekSummary(e.target.checked)}
+              aria-describedby={weekHintId}
+            />
+            <label htmlFor={weekId}>{t('settings.weekSummary.label')}</label>
+          </div>
+          <p id={weekHintId} className="hint">
+            {t('settings.weekSummary.hint')}
+          </p>
         </section>
 
         <section className="section" aria-labelledby={`${importId}-backup`}>

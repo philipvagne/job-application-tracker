@@ -13,10 +13,6 @@
     "sv": "Svenska",
     "en": "English"
   },
-  "empty": {
-    "title": "Add your first application",
-    "body": "Your applications will appear here, in a simple list."
-  },
   "footer": {
     "privacy": "Your data stays in this browser."
   },
@@ -73,6 +69,11 @@
       "button": "Delete all my data",
       "done": "All your data has been deleted.",
       "failed": "Your data couldn't be deleted. Try again, or clear this site's data in your browser settings."
+    },
+    "weekSummary": {
+      "title": "Weekly summary",
+      "label": "Show weekly summary",
+      "hint": "Shows how many applications you marked as applied this week."
     }
   },
   "confirm": {
@@ -101,10 +102,15 @@
   "quickAdd": {
     "title": "Add a job",
     "add": "Add",
-    "added": "Added: {company}"
+    "added": "Added: {company}",
+    "linkLabel": "Link to the job ad",
+    "linkHelp": "Optional. With a link you can open the ad from the list.",
+    "cvLabel": "CV you send",
+    "cvHelp": "Used when you mark the job as applied. That way you can see later which CV you used.",
+    "noCv": "No CV yet"
   },
   "paste": {
-    "summary": "Paste several links",
+    "summary": "+ Add several links at once",
     "label": "One link or job title per line",
     "hint": "Up to 200 lines. Blank lines are ignored.",
     "add": "Add all",
@@ -112,14 +118,12 @@
     "result": "Added: {added}. Skipped lines: {skipped}."
   },
   "cv": {
-    "label": "CV for the next application",
     "choose": "Choose a CV",
     "addOption": "Add a CV",
     "nameLabel": "CV name",
     "save": "Save CV",
     "saveAndApply": "Save and mark as applied",
     "firstPrompt": "Which CV are you using? Give it a name. Next time you can pick it from a list.",
-    "none": "You'll be asked to name a CV when you mark your first application as applied.",
     "required": "Choose a CV first.",
     "nameRequired": "Enter a name for the CV.",
     "nameTaken": "You already have a CV with that name."
@@ -130,15 +134,29 @@
       "other": "{count} applications this week"
     },
     "toApply": {
-      "title": "To apply",
       "empty": "Nothing waiting. Add a job above."
     },
     "applied": {
-      "title": "Applied jobs",
       "empty": "Applications you mark as applied will show up here."
     },
     "closed": {
-      "title": "Closed ({count})"
+      "empty": "No closed applications."
+    },
+    "tabs": {
+      "label": "Applications by status"
+    },
+    "tab": {
+      "to_apply": "To apply",
+      "applied": "Applied",
+      "interview": "Interview",
+      "offer": "Offer",
+      "closed": "Closed"
+    },
+    "interview": {
+      "empty": "No interviews yet."
+    },
+    "offer": {
+      "empty": "No offers yet."
     }
   },
   "status": {
@@ -241,7 +259,8 @@
       "fileName": "file name",
       "size": "size",
       "type": "type",
-      "closedFrom": "closed from"
+      "closedFrom": "closed from",
+      "showWeekSummary": "weekly summary"
     }
   },
   "importErrors": {
@@ -280,5 +299,46 @@
       "unavailable": "This browser can't store files.",
       "unknown": "Something went wrong when storing the file. Nothing was added."
     }
+  },
+  "reply": {
+    "none": "No reply yet",
+    "received": "Reply received",
+    "followUp": "Time to follow up"
+  },
+  "cvPanel": {
+    "title": "My CVs",
+    "add": "Add",
+    "help": "Stored only in this browser.",
+    "empty": "No CVs added yet.",
+    "open": "Open",
+    "usedOne": "used in {count} application",
+    "usedOther": "used in {count} applications",
+    "pdf": "PDF · {size}",
+    "noFile": "No file attached",
+    "openFor": "Open CV: {name}"
+  },
+  "side": {
+    "lastBackup": "Last backup: {date}",
+    "export": "Export"
+  },
+  "welcome": {
+    "title": "A notepad for your job applications",
+    "intro": "You fill in each job yourself, so you always know what you've applied for, with which CV, and when it's time to follow up. Nothing is fetched or sent automatically. There are no accounts, and everything is saved only in this browser.",
+    "steps": "How it works",
+    "step1": {
+      "title": "Add your CV (optional)",
+      "body": "Upload a PDF, so you always see which CV you sent to which job.",
+      "button": "Add CV"
+    },
+    "step2": {
+      "title": "Add a job you want to apply for",
+      "body": "Fill in the company, and paste the link to the ad if you like."
+    },
+    "step3": {
+      "title": "Mark it when you've applied",
+      "body": "Then the app counts the days for you and shows when it is time to follow up."
+    },
+    "addTitle": "Add your first job",
+    "tip": "Tip: export a backup now and then, so you always have a copy of your data."
   }
 }

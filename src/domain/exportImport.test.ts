@@ -580,3 +580,28 @@ describe('settings.lastExportAt', () => {
     expect(errorsOf(file)).toEqual([{ code: 'invalid_date', path: 'settings.lastExportAt' }])
   })
 })
+
+describe('settings.showWeekSummary', () => {
+  const on: AppState = { ...state, settings: { ...state.settings, showWeekSummary: true } }
+
+  it('round-trips, and is left out of the export when not set', () => {
+    expect(importData(JSON.parse(JSON.stringify(exportData(on))))).toEqual({ ok: true, state: on })
+    expect('showWeekSummary' in exportData(state).settings).toBe(false)
+    expect(exportData(on).version).toBe(2)
+  })
+
+  it('keeps false as false, and reads a file without it as off', () => {
+    const off: AppState = { ...state, settings: { ...state.settings, showWeekSummary: false } }
+    expect(importData(JSON.parse(JSON.stringify(exportData(off))))).toEqual({ ok: true, state: off })
+    const r = importData(valid())
+    expect(r.ok && r.state.settings.showWeekSummary).toBeUndefined()
+  })
+
+  it('rejects a value that is not true or false', () => {
+    const data = valid()
+    data['settings'] = { reminderDays: 14, language: 'sv', showWeekSummary: 'yes' }
+    expect(errorsOf(data)).toEqual([
+      { code: 'wrong_type', path: 'settings.showWeekSummary', params: { expected: 'boolean', actual: 'string' } },
+    ])
+  })
+})

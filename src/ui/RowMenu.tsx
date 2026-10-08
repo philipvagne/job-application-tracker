@@ -92,7 +92,7 @@ export function RowMenu({ application, onAction }: RowMenuProps) {
       <summary
         ref={summaryRef}
         id={`more-${application.id}`}
-        className="btn"
+        className="btn btn--small"
         aria-label={t('row.actionFor', { action: t('row.more'), company })}
       >
         {t('row.more')}

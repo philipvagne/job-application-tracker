@@ -9,6 +9,7 @@ import {
   resetState,
   setLanguage,
   setReminderDays,
+  setShowWeekSummary,
   type AppState,
   type Application,
   type CvFile,
@@ -20,6 +21,7 @@ export type Action =
   | { type: 'replace'; state: AppState }
   | { type: 'setLanguage'; language: Language }
   | { type: 'setReminderDays'; days: number }
+  | { type: 'setShowWeekSummary'; show: boolean }
   | { type: 'markExported'; now: IsoDate }
   | { type: 'addApplications'; applications: Application[] }
   | { type: 'replaceApplication'; application: Application }
@@ -41,6 +43,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return state.settings.language === action.language ? state : setLanguage(state, action.language)
     case 'setReminderDays':
       return setReminderDays(state, action.days)
+    case 'setShowWeekSummary':
+      return setShowWeekSummary(state, action.show)
     case 'markExported':
       return markExported(state, action.now)
     case 'addApplications':
