@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applicationsWithStatus, countsByStatus, defaultTab, nextTabIndex, TABS } from './tabs'
+import { applicationsWithStatus, countsByStatus, defaultTab, nextTabIndex, tabAfterDataChange, TABS } from './tabs'
 import { STATUSES, type Application, type Status } from './types'
 
 function app(id: string, status: Status): Application {
@@ -62,5 +62,15 @@ describe('nextTabIndex', () => {
     expect(nextTabIndex(1, 'Enter', 5)).toBeNull()
     expect(nextTabIndex(1, 'ArrowDown', 5)).toBeNull()
     expect(nextTabIndex(0, 'ArrowRight', 0)).toBeNull()
+  })
+})
+
+describe('tabAfterDataChange', () => {
+  it('is to_apply when there are no applications, whatever was selected', () => {
+    for (const tab of TABS) expect(tabAfterDataChange(tab, [])).toBe('to_apply')
+  })
+
+  it('keeps the current tab when there are applications', () => {
+    for (const tab of TABS) expect(tabAfterDataChange(tab, [app('a', 'closed')])).toBe(tab)
   })
 })

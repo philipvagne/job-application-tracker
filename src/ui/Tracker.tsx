@@ -8,6 +8,7 @@ import {
   countsByStatus,
   defaultTab,
   reopenTarget,
+  tabAfterDataChange,
   suggestCvName,
   type Application,
   type ClosedReason,
@@ -76,6 +77,10 @@ export function Tracker() {
   const [focusIds, setFocusIds] = useState<string[]>([])
   // Which status tab is shown. Kept in memory only; the first tab is chosen once, from what exists.
   const [tab, setTab] = useState<Status>(() => defaultTab(applications))
+  // With no applications the tab is always the first one (see tabAfterDataChange). Set during
+  // render, so a stale tab from before "delete all my data" is never shown, not even for a frame.
+  const resetTab = tabAfterDataChange(tab, applications)
+  if (resetTab !== tab) setTab(resetTab)
 
   const now = new Date().toISOString()
 
@@ -239,12 +244,6 @@ export function Tracker() {
 
   function onMenu(application: Application, action: MenuAction): void {
     switch (action) {
-      case 'reply':
-        if (actions.markReplied(application.id)) {
-          setMessage(t('announce.replied', { company: application.company }))
-        }
-        setFocusIds([`more-${application.id}`])
-        return
       case 'toInterview':
         moveTo(application, 'interview')
         return
@@ -329,7 +328,7 @@ export function Tracker() {
           <input
             id={cvFileId}
             ref={cvFileRef}
-            className="input"
+            className="input--file"
             type="file"
             accept=".pdf,application/pdf"
             disabled={!filesAvailable}
@@ -398,7 +397,7 @@ export function Tracker() {
   }
 
   return (
-    <div className="tracker">
+    <div className={firstVisit ? 'tracker tracker--welcome' : 'tracker'}>
       <p role="status" className="note tracker__status">
         {message}
       </p>

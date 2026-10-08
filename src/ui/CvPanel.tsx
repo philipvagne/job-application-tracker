@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { applicationsUsingCv, type Application, type Cv } from '../domain'
-import { formatFileSize } from '../i18n'
 import { useApp } from '../state/AppContext'
 
 export const CV_ADD_BUTTON_ID = 'cv-add-button'
@@ -39,15 +38,16 @@ export function CvPanel({ cvs, applications, onAdd, onOpenCv, form }: CvPanelPro
             const count = applicationsUsingCv(applications, cv.id)
             const used = t(plural.select(count) === 'one' ? 'cvPanel.usedOne' : 'cvPanel.usedOther', { count })
             const status = fileStatus(cv)
-            const first =
-              cv.file === undefined
-                ? t('cvPanel.noFile')
-                : t('cvPanel.pdf', { size: formatFileSize(cv.file.size, language) })
             return (
               <li key={cv.id} className="cvlist__item">
                 <p className="cvlist__name">{cv.name}</p>
-                <p className="cvlist__meta">{`${first} · ${used}`}</p>
-                {status === 'missing' && <p className="cvlist__meta">{t('cvFile.missing')}</p>}
+                <p className="cvlist__meta">{used}</p>
+                {status === 'missing' && (
+                  <p className="cvlist__warn">
+                    <span aria-hidden="true">! </span>
+                    {t('cvPanel.fileMissing')}
+                  </p>
+                )}
                 {(status === 'available' || status === 'unknown') && (
                   <button
                     type="button"

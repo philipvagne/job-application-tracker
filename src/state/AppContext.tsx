@@ -5,7 +5,6 @@ import {
   cvFileStatus,
   isBackupDue,
   linkCv,
-  markReplied,
   newApplication,
   parsePastedList,
   updateApplication,
@@ -84,7 +83,6 @@ export interface AppContextValue {
     linkCv(applicationId: string, cvId: string | null): Result<null, LinkCvError>
     /** Marks a to-apply application as applied with this CV, and remembers the CV. */
     markApplied(id: string, cvId: string): boolean
-    markReplied(id: string): boolean
     changeStatus(id: string, to: Status, closedReason?: ClosedReason): Result<Application, TransitionError | 'unknown_application'>
   }
 }
@@ -344,15 +342,6 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         const before = stateRef.current
         commit({ type: 'markApplied', id, cvId, now: nowIso() })
         return stateRef.current !== before
-      },
-
-      markReplied(id) {
-        const current = stateRef.current.applications.find((a) => a.id === id)
-        if (current === undefined) return false
-        const result = markReplied(current, nowIso())
-        if (!result.ok) return false
-        commit({ type: 'replaceApplication', application: result.value })
-        return true
       },
 
       changeStatus(id, to, closedReason) {

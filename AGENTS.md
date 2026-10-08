@@ -21,6 +21,7 @@ Read `docs/DEFINITION_OF_DONE.md` before every pass. It decides scope. If anythi
 4. **Untrusted input.** Text arriving from a URL, a pasted link or an imported file is shown as plain text, never as HTML, and imported files are validated before use.
 5. **No hardcoded user-facing text in components.** All text comes from the Swedish and English language files in `src/i18n/`, which must always have identical keys.
 6. **No `any`.** If a type is unclear, ask.
+7. **Never stop processes by name or pattern.** No `taskkill /IM`, `pkill`, `killall`, `Stop-Process -Name` or similar. Only stop a process you started yourself, by its exact process ID, and record that ID when you start it. If you cannot be sure which process is yours, leave it running and tell the user.
 
 ## Product tone
 

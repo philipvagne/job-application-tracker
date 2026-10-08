@@ -20,7 +20,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 5. **Lists and statuses.** Status tabs: To apply, Applied, Interview, Offer and Closed (reason: no reply, not selected, declined offer; older entries keep their old reason). One list is shown at a time, with the count on each tab. The layout was decided from an approved mockup (docs/mockups/): tabs, with a "My CVs" column.
 6. **Reminders that compute themselves, and are optional.** "No reply after N days" can be switched on or off in settings, and N is a setting.
 7. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.
-8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead.
+8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead. A reply is recorded automatically when an application moves to Interview or Offer; there is no manual "got a reply" action.
 9. **Backup.** Export and import as JSON including the CV files, plus CSV export. The app asks the browser to keep its storage, and reminds the user when a backup is overdue. Built in two steps: first the application data and CV names and file details, **without the files themselves** (the app says so plainly), then a "full backup" pass that adds the files.
 10. **CV deletion.** A CV entry and its file can be deleted, with a confirmation that names the applications using it. Must be done before release.
 11. **Swedish and English** interface, desktop-first, keyboard accessible. It must work on a phone but is not optimised for one.

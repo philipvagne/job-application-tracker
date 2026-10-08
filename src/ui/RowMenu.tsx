@@ -3,7 +3,7 @@ import type { Application } from '../domain'
 import type { TextKey } from '../i18n'
 import { useApp } from '../state/AppContext'
 
-export type MenuAction = 'reply' | 'toInterview' | 'toOffer' | 'back' | 'close' | 'edit' | 'delete'
+export type MenuAction = 'toInterview' | 'toOffer' | 'back' | 'close' | 'edit' | 'delete'
 
 /** The actions that make sense for this application, in menu order. */
 export function menuActionsFor(application: Application): MenuAction[] {
@@ -11,15 +11,7 @@ export function menuActionsFor(application: Application): MenuAction[] {
     case 'to_apply':
       return ['edit', 'delete']
     case 'applied':
-      return [
-        ...(application.repliedAt === undefined ? (['reply'] as const) : []),
-        'toInterview',
-        'toOffer',
-        'back',
-        'close',
-        'edit',
-        'delete',
-      ]
+      return ['toInterview', 'toOffer', 'back', 'close', 'edit', 'delete']
     case 'interview':
       return ['toOffer', 'back', 'close', 'edit', 'delete']
     case 'offer':
@@ -30,7 +22,6 @@ export function menuActionsFor(application: Application): MenuAction[] {
 }
 
 const LABEL: Record<MenuAction, TextKey> = {
-  reply: 'menu.reply',
   toInterview: 'menu.toInterview',
   toOffer: 'menu.toOffer',
   back: 'menu.back',

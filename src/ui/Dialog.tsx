@@ -6,6 +6,8 @@ interface DialogProps {
   onClose: () => void
   /** The id of the element inside that names the dialog. */
   titleId: string
+  /** Extra class, e.g. dialog--fixed-footer. */
+  className?: string
   children: ReactNode
 }
 
@@ -14,7 +16,7 @@ interface DialogProps {
  * focus to the opener. Keep it mounted and toggle `open`, so focus can be restored.
  * An element inside with data-autofocus gets the focus first.
  */
-export function Dialog({ open, onClose, titleId, children }: DialogProps) {
+export function Dialog({ open, onClose, titleId, className, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export function Dialog({ open, onClose, titleId, children }: DialogProps) {
   }, [open])
 
   return (
-    <dialog ref={ref} className="dialog" aria-labelledby={titleId} onClose={onClose}>
+    <dialog ref={ref} className={className === undefined ? 'dialog' : `dialog ${className}`} aria-labelledby={titleId} onClose={onClose}>
       {children}
     </dialog>
   )

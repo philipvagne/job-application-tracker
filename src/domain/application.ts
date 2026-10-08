@@ -14,7 +14,6 @@ export type TransitionError =
   | 'same_status'
   | 'invalid_transition'
   | 'closed_reason_required'
-  | 'not_applied'
   | 'cv_required'
 
 export type ApplicationFieldError = 'company_required' | 'invalid_url'
@@ -93,16 +92,6 @@ export function markApplied(
 ): Result<Application, TransitionError> {
   if (application.status !== 'to_apply') return { ok: false, error: 'invalid_transition' }
   return { ok: true, value: { ...application, status: 'applied', cvId, appliedAt: now } }
-}
-
-/** Records that the employer replied. Keeps the first reply date if there already is one. */
-export function markReplied(
-  application: Application,
-  now: IsoDate,
-): Result<Application, TransitionError> {
-  if (application.appliedAt === undefined) return { ok: false, error: 'not_applied' }
-  if (application.repliedAt !== undefined) return { ok: true, value: application }
-  return { ok: true, value: { ...application, repliedAt: now } }
 }
 
 const ALLOWED: Record<Status, readonly Status[]> = {

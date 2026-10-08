@@ -22,6 +22,15 @@ export function defaultTab(applications: readonly Application[]): Status {
 }
 
 /**
+ * The tab to show after the data changed: with no applications it is always to_apply, so deleting
+ * all data, or a first job added to an empty list, never lands on a tab chosen before. Otherwise
+ * the current tab stays.
+ */
+export function tabAfterDataChange(current: Status, applications: readonly Application[]): Status {
+  return applications.length === 0 ? 'to_apply' : current
+}
+
+/**
  * The tab to select after a key press on a tab, or null if the key does nothing.
  * Arrow keys wrap around; Home and End go to the first and last tab.
  */

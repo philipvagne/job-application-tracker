@@ -28,12 +28,6 @@ describe('replyIndicator', () => {
     expect(replyIndicator(app({ status: 'closed', closedReason: 'no_reply', repliedAt: NOW }), NOW, 1)).toBe('none')
   })
 
-  it('says a reply came when there is a repliedAt, whatever the stage', () => {
-    for (const status of ['applied', 'interview', 'offer'] as const) {
-      expect(replyIndicator(app({ status, repliedAt: '2026-10-11T08:00:00.000Z' }), NOW, 1)).toBe('replied')
-    }
-  })
-
   it('says no reply yet for a recent application without one', () => {
     expect(replyIndicator(app(), NOW, 7)).toBe('no_reply_yet')
   })
@@ -43,14 +37,16 @@ describe('replyIndicator', () => {
     expect(replyIndicator(app({ appliedAt: '2026-10-09T12:00:00.000Z' }), NOW, 7)).toBe('no_reply_yet')
   })
 
-  it('never shows a follow-up for an application that has a reply', () => {
+  it('shows nothing for an applied row that has a repliedAt (older backup, or stepped back from interview)', () => {
     const replied = app({ appliedAt: '2026-09-01T12:00:00.000Z', repliedAt: '2026-09-02T12:00:00.000Z' })
-    expect(replyIndicator(replied, NOW, 7)).toBe('replied')
+    expect(replyIndicator(replied, NOW, 7)).toBe('none')
   })
 
-  it('shows nothing for interview or offer without a repliedAt (odd imported data)', () => {
-    expect(replyIndicator(app({ status: 'interview' }), NOW, 7)).toBe('none')
-    expect(replyIndicator(app({ status: 'offer' }), NOW, 7)).toBe('none')
+  it('shows nothing for interview or offer, with or without a repliedAt', () => {
+    for (const status of ['interview', 'offer'] as const) {
+      expect(replyIndicator(app({ status }), NOW, 7)).toBe('none')
+      expect(replyIndicator(app({ status, repliedAt: '2026-10-11T08:00:00.000Z' }), NOW, 1)).toBe('none')
+    }
   })
 
   it('treats an unreadable date as not due', () => {

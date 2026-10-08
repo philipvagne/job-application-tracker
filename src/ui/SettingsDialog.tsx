@@ -34,6 +34,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const weekHintId = useId()
   const importId = useId()
   const importHintId = useId()
+  const exportHelpId = useId()
 
   const importInputRef = useRef<HTMLInputElement>(null)
 
@@ -142,7 +143,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} titleId={titleId}>
+      <Dialog open={open} onClose={handleClose} titleId={titleId} className="dialog--fixed-footer">
         <h2 id={titleId} className="dialog__title">
           {t('settings.title')}
         </h2>
@@ -151,120 +152,126 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           {messageText}
         </p>
 
-        <section className="section" aria-labelledby={`${reminderId}-h`}>
-          <h3 id={`${reminderId}-h`}>{t('settings.reminder.title')}</h3>
-          <div className="field">
-            <label htmlFor={reminderId}>{t('settings.reminder.label')}</label>
-            <input
-              id={reminderId}
-              className="input input--short"
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={reminderText}
-              onChange={onReminderChange}
-              onBlur={onReminderBlur}
-              aria-invalid={reminderInvalid}
-              aria-describedby={reminderInvalid ? `${reminderHintId} ${reminderErrorId}` : reminderHintId}
-            />
-            <p id={reminderHintId} className="hint">
-              {t('settings.reminder.hint', range)}
-            </p>
-            <p id={reminderErrorId} className="error" aria-live="polite">
-              {reminderInvalid ? t('settings.reminder.error', range) : ''}
-            </p>
-          </div>
-        </section>
-
-        <section className="section" aria-labelledby={`${weekId}-h`}>
-          <h3 id={`${weekId}-h`}>{t('settings.weekSummary.title')}</h3>
-          <div className="check">
-            <input
-              id={weekId}
-              type="checkbox"
-              checked={state.settings.showWeekSummary === true}
-              onChange={(e) => actions.setShowWeekSummary(e.target.checked)}
-              aria-describedby={weekHintId}
-            />
-            <label htmlFor={weekId}>{t('settings.weekSummary.label')}</label>
-          </div>
-          <p id={weekHintId} className="hint">
-            {t('settings.weekSummary.hint')}
-          </p>
-        </section>
-
-        <section className="section" aria-labelledby={`${importId}-backup`}>
-          <h3 id={`${importId}-backup`}>{t('settings.backup.title')}</h3>
-          <p className="hint">
-            {lastExport === undefined
-              ? t('settings.backup.neverExported')
-              : t('settings.backup.lastExport', { date: formatDate(lastExport, language) })}
-          </p>
-          <p className="hint">{t('settings.backup.noFiles')}</p>
-          <p>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                actions.exportBackup()
-                setMessage('exported')
-              }}
-            >
-              {t('common.export')}
-            </button>
-          </p>
-
-          <div className="field">
-            <label htmlFor={importId}>{t('settings.import.label')}</label>
-            <input
-              id={importId}
-              ref={importInputRef}
-              className="input"
-              type="file"
-              accept=".json,application/json"
-              aria-describedby={importHintId}
-              onChange={(e) => void onFileChosen(e)}
-            />
-            <p id={importHintId} className="hint">
-              {t('settings.import.hint')}
-            </p>
-          </div>
-          {importFailed && (
-            <div role="alert" className="error-box">
-              <p>
-                <strong>{t('settings.import.failedTitle')}</strong>
+        <div className="dialog__body">
+          <section className="section" aria-labelledby={`${reminderId}-h`}>
+            <h3 id={`${reminderId}-h`}>{t('settings.reminder.title')}</h3>
+            <div className="field">
+              <label htmlFor={reminderId}>{t('settings.reminder.label')}</label>
+              <input
+                id={reminderId}
+                className="input input--short"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={reminderText}
+                onChange={onReminderChange}
+                onBlur={onReminderBlur}
+                aria-invalid={reminderInvalid}
+                aria-describedby={reminderInvalid ? `${reminderHintId} ${reminderErrorId}` : reminderHintId}
+              />
+              <p id={reminderHintId} className="hint">
+                {t('settings.reminder.hint', range)}
               </p>
-              {importReadFailed && <p>{t('settings.import.readFailed')}</p>}
-              {importErrors.length > 0 && (
-                <ul>
-                  {importErrors.slice(0, MAX_SHOWN_ERRORS).map((error, i) => (
-                    <li key={i}>{formatImportError(error, dict)}</li>
-                  ))}
-                  {importErrors.length > MAX_SHOWN_ERRORS && (
-                    <li>{t('settings.import.more', { count: importErrors.length - MAX_SHOWN_ERRORS })}</li>
-                  )}
-                </ul>
-              )}
+              <p id={reminderErrorId} className="error" aria-live="polite">
+                {reminderInvalid ? t('settings.reminder.error', range) : ''}
+              </p>
             </div>
-          )}
-        </section>
+          </section>
 
-        <section className="section" aria-labelledby={`${importId}-delete`}>
-          <h3 id={`${importId}-delete`}>{t('settings.delete.title')}</h3>
-          <p>{t('settings.delete.body')}</p>
-          <p>
-            <button type="button" className="btn" onClick={() => setConfirmDelete(true)}>
-              {t('settings.delete.button')}
-            </button>
-          </p>
-          {deleteFailed && (
-            <p role="alert" className="error-box">
-              {t('settings.delete.failed')}
+          <section className="section" aria-labelledby={`${weekId}-h`}>
+            <h3 id={`${weekId}-h`}>{t('settings.weekSummary.title')}</h3>
+            <div className="check">
+              <input
+                id={weekId}
+                type="checkbox"
+                checked={state.settings.showWeekSummary === true}
+                onChange={(e) => actions.setShowWeekSummary(e.target.checked)}
+                aria-describedby={weekHintId}
+              />
+              <label htmlFor={weekId}>{t('settings.weekSummary.label')}</label>
+            </div>
+            <p id={weekHintId} className="hint">
+              {t('settings.weekSummary.hint')}
             </p>
-          )}
-        </section>
+          </section>
 
-        <div className="dialog__actions">
+          <section className="section" aria-labelledby={`${importId}-backup`}>
+            <h3 id={`${importId}-backup`}>{t('settings.backup.title')}</h3>
+            <p className="hint">
+              {lastExport === undefined
+                ? t('settings.backup.neverExported')
+                : t('settings.backup.lastExport', { date: formatDate(lastExport, language) })}
+            </p>
+            <p className="hint">{t('settings.backup.noFiles')}</p>
+            <div className="field">
+              <button
+                type="button"
+                className="btn"
+                aria-describedby={exportHelpId}
+                onClick={() => {
+                  actions.exportBackup()
+                  setMessage('exported')
+                }}
+              >
+                {t('common.export')}
+              </button>
+              <p id={exportHelpId} className="hint">
+                {t('settings.backup.help')}
+              </p>
+            </div>
+
+            <div className="field">
+              <label htmlFor={importId}>{t('settings.import.label')}</label>
+              <input
+                id={importId}
+                ref={importInputRef}
+                className="input--file"
+                type="file"
+                accept=".json,application/json"
+                aria-describedby={importHintId}
+                onChange={(e) => void onFileChosen(e)}
+              />
+              <p id={importHintId} className="hint">
+                {t('settings.import.hint')}
+              </p>
+            </div>
+            {importFailed && (
+              <div role="alert" className="error-box">
+                <p>
+                  <strong>{t('settings.import.failedTitle')}</strong>
+                </p>
+                {importReadFailed && <p>{t('settings.import.readFailed')}</p>}
+                {importErrors.length > 0 && (
+                  <ul>
+                    {importErrors.slice(0, MAX_SHOWN_ERRORS).map((error, i) => (
+                      <li key={i}>{formatImportError(error, dict)}</li>
+                    ))}
+                    {importErrors.length > MAX_SHOWN_ERRORS && (
+                      <li>{t('settings.import.more', { count: importErrors.length - MAX_SHOWN_ERRORS })}</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="section" aria-labelledby={`${importId}-delete`}>
+            <h3 id={`${importId}-delete`}>{t('settings.delete.title')}</h3>
+            <p>{t('settings.delete.body')}</p>
+            <p>
+              <button type="button" className="btn" onClick={() => setConfirmDelete(true)}>
+                {t('settings.delete.button')}
+              </button>
+            </p>
+            {deleteFailed && (
+              <p role="alert" className="error-box">
+                {t('settings.delete.failed')}
+              </p>
+            )}
+          </section>
+        </div>
+
+        <div className="dialog__actions dialog__actions--fixed">
           <button type="button" className="btn btn--primary" onClick={handleClose}>
             {t('common.close')}
           </button>

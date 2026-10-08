@@ -3,7 +3,6 @@ import {
   changeStatus,
   createApplication,
   markApplied,
-  markReplied,
   newApplication,
   reopenTarget,
   updateApplication,
@@ -58,22 +57,6 @@ describe('markApplied', () => {
       error: 'invalid_transition',
     })
     expect(markApplied(make({ status: 'closed', closedReason: 'withdrawn' }), 'cv1', T1).ok).toBe(false)
-  })
-})
-
-describe('markReplied', () => {
-  it('sets repliedAt without changing status', () => {
-    const r = markReplied(make({ status: 'applied', appliedAt: T0 }), T1)
-    expect(r).toEqual({ ok: true, value: expect.objectContaining({ status: 'applied', repliedAt: T1 }) })
-  })
-
-  it('keeps the first reply date', () => {
-    const r = markReplied(make({ status: 'applied', appliedAt: T0, repliedAt: T1 }), T2)
-    expect(r.ok && r.value.repliedAt).toBe(T1)
-  })
-
-  it('rejects applications that were never applied', () => {
-    expect(markReplied(make(), T1)).toEqual({ ok: false, error: 'not_applied' })
   })
 })
 

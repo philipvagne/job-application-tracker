@@ -6,7 +6,7 @@
     "close": "Stäng",
     "cancel": "Avbryt",
     "dismiss": "Dölj",
-    "export": "Exportera säkerhetskopia"
+    "export": "Ladda ner säkerhetskopia"
   },
   "language": {
     "label": "Språk",
@@ -19,7 +19,7 @@
   "banner": {
     "notSaved": {
       "title": "Ändringar kan inte sparas i den här webbläsaren",
-      "body": "Dina uppgifter finns bara kvar medan fliken är öppen. Exportera en säkerhetskopia för att behålla en kopia."
+      "body": "Dina uppgifter finns bara kvar medan fliken är öppen. Ladda ner en säkerhetskopia för att behålla en kopia."
     },
     "unreadable": {
       "title": "Vissa sparade uppgifter gick inte att läsa",
@@ -31,12 +31,12 @@
     },
     "saveFailed": {
       "title": "Din senaste ändring kunde inte sparas",
-      "bodyQuota": "Webbläsarens lagringsutrymme är fullt. Exportera en säkerhetskopia så att inget går förlorat.",
-      "bodyUnknown": "Något hindrade webbläsaren från att spara. Exportera en säkerhetskopia så att inget går förlorat."
+      "bodyQuota": "Webbläsarens lagringsutrymme är fullt. Ladda ner en säkerhetskopia så att inget går förlorat.",
+      "bodyUnknown": "Något hindrade webbläsaren från att spara. Ladda ner en säkerhetskopia så att inget går förlorat."
     },
     "backupDue": {
       "title": "Dags för en säkerhetskopia?",
-      "body": "Exportera en kopia av dina uppgifter så att de är i säkerhet."
+      "body": "Ladda ner en kopia av dina uppgifter så att de är i säkerhet."
     }
   },
   "settings": {
@@ -50,16 +50,17 @@
     },
     "backup": {
       "title": "Säkerhetskopia",
-      "lastExport": "Senaste export: {date}",
-      "neverExported": "Du har inte exporterat någon säkerhetskopia ännu.",
-      "exported": "Säkerhetskopian är exporterad.",
-      "noFiles": "Säkerhetskopior innehåller inte dina CV-filer ännu. Behåll dina original-PDF:er."
+      "lastExport": "Senaste säkerhetskopia: {date}",
+      "neverExported": "Du har inte laddat ner någon säkerhetskopia ännu.",
+      "exported": "Säkerhetskopian är nedladdad.",
+      "noFiles": "Säkerhetskopior innehåller inte dina CV-filer ännu. Behåll dina original-PDF:er.",
+      "help": "Sparar en fil med alla dina uppgifter på din dator."
     },
     "import": {
-      "label": "Importera en säkerhetskopia",
-      "hint": "Välj en .json-fil som exporterats från den här appen.",
-      "success": "Säkerhetskopian är importerad.",
-      "failedTitle": "Säkerhetskopian kunde inte importeras",
+      "label": "Återställ från säkerhetskopia",
+      "hint": "Välj en säkerhetskopia du har laddat ner tidigare.",
+      "success": "Dina uppgifter är återställda.",
+      "failedTitle": "Säkerhetskopian kunde inte återställas",
       "readFailed": "Filen kunde inte öppnas.",
       "more": "…och {count} till"
     },
@@ -77,17 +78,17 @@
     }
   },
   "confirm": {
-    "exportFirst": "Exportera först: ladda ner en säkerhetskopia av dina nuvarande uppgifter",
-    "exportFirstShort": "Exportera först",
-    "exportDone": "Säkerhetskopian är exporterad.",
+    "exportFirst": "Ladda ner en säkerhetskopia av dina nuvarande uppgifter innan du fortsätter",
+    "exportFirstShort": "Ladda ner säkerhetskopia först",
+    "exportDone": "Säkerhetskopian är nedladdad.",
     "replace": {
       "title": "Ersätta dina nuvarande uppgifter?",
-      "body": "Om du importerar den här säkerhetskopian ersätts de uppgifter som nu är sparade i den här webbläsaren.",
+      "body": "Om du återställer från den här säkerhetskopian ersätts de uppgifter som nu är sparade i den här webbläsaren.",
       "button": "Ersätt mina uppgifter"
     },
     "delete": {
       "title": "Radera all din data?",
-      "body": "Allt som är sparat i den här webbläsaren tas bort. Exportera en säkerhetskopia först om du kan vilja ha tillbaka det.",
+      "body": "Allt som är sparat i den här webbläsaren tas bort. Ladda ner en säkerhetskopia först om du kan vilja ha tillbaka det.",
       "button": "Ja, radera allt"
     }
   },
@@ -179,10 +180,10 @@
     "cvName": "CV: {name}",
     "linkOpens": "{host} (öppnas i en ny flik)",
     "more": "Mer",
-    "closedWithReason": "Avslutad: {reason}"
+    "closedWithReason": "Avslutad: {reason}",
+    "notePrefix": "Anteckning:"
   },
   "menu": {
-    "reply": "Fått svar",
     "toInterview": "Flytta till Intervju",
     "toOffer": "Flytta till Erbjudande",
     "back": "Flytta tillbaka",
@@ -194,7 +195,6 @@
   "announce": {
     "markedApplied": "Markerad som sökt: {company}",
     "movedTo": "Flyttad till {status}: {company}",
-    "replied": "Svar noterat: {company}",
     "closed": "Avslutad: {company}",
     "reopened": "Öppnad igen: {company}",
     "saved": "Sparad: {company}",
@@ -293,7 +293,7 @@
       "not_pdf": "Bara PDF-filer kan läggas till. Välj en fil som slutar på .pdf.",
       "not_pdf_content": "Filen heter .pdf men innehållet är ingen PDF. Välj en annan fil.",
       "unreadable": "Filen gick inte att läsa. Försök välja den igen.",
-      "save_failed": "CV:t kunde inte sparas, så inget lades till. Exportera en säkerhetskopia av dina uppgifter och försök igen.",
+      "save_failed": "CV:t kunde inte sparas, så inget lades till. Ladda ner en säkerhetskopia av dina uppgifter och försök igen.",
       "quota": "Webbläsarens lagringsutrymme är fullt, så filen lades inte till.",
       "blocked": "Fillagringen används av en annan flik med appen. Stäng den andra fliken och försök igen.",
       "unavailable": "Den här webbläsaren kan inte lagra filer.",
@@ -302,7 +302,6 @@
   },
   "reply": {
     "none": "Inget svar än",
-    "received": "Svar fått",
     "followUp": "Dags att följa upp"
   },
   "cvPanel": {
@@ -313,13 +312,12 @@
     "open": "Öppna",
     "usedOne": "används i {count} ansökan",
     "usedOther": "används i {count} ansökningar",
-    "pdf": "PDF · {size}",
-    "noFile": "Ingen fil bifogad",
-    "openFor": "Öppna CV: {name}"
+    "openFor": "Öppna CV: {name}",
+    "fileMissing": "Filen saknas i den här webbläsaren. Lägg till den igen som ett nytt CV."
   },
   "side": {
     "lastBackup": "Senaste säkerhetskopia: {date}",
-    "export": "Exportera"
+    "export": "Ladda ner"
   },
   "welcome": {
     "title": "Ett anteckningsblock för dina jobbansökningar",
@@ -339,6 +337,6 @@
       "body": "Då räknar appen dagarna åt dig och visar när det är dags att följa upp."
     },
     "addTitle": "Lägg till ditt första jobb",
-    "tip": "Tips: exportera en säkerhetskopia då och då, så har du alltid en kopia av dina uppgifter."
+    "tip": "Tips: ladda ner en säkerhetskopia då och då, så har du alltid en kopia av dina uppgifter."
   }
 }

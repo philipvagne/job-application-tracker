@@ -6,7 +6,7 @@
     "close": "Close",
     "cancel": "Cancel",
     "dismiss": "Dismiss",
-    "export": "Export backup"
+    "export": "Download backup"
   },
   "language": {
     "label": "Language",
@@ -19,7 +19,7 @@
   "banner": {
     "notSaved": {
       "title": "Changes can't be saved in this browser",
-      "body": "Your data is only kept while this tab is open. Export a backup to keep a copy."
+      "body": "Your data is only kept while this tab is open. Download a backup to keep a copy."
     },
     "unreadable": {
       "title": "Some saved data couldn't be read",
@@ -31,12 +31,12 @@
     },
     "saveFailed": {
       "title": "Your latest change couldn't be saved",
-      "bodyQuota": "This browser's storage is full. Export a backup so nothing is lost.",
-      "bodyUnknown": "Something stopped the browser from saving. Export a backup so nothing is lost."
+      "bodyQuota": "This browser's storage is full. Download a backup so nothing is lost.",
+      "bodyUnknown": "Something stopped the browser from saving. Download a backup so nothing is lost."
     },
     "backupDue": {
       "title": "Time for a backup?",
-      "body": "Export a copy of your data so it is safe."
+      "body": "Download a copy of your data so it is safe."
     }
   },
   "settings": {
@@ -50,16 +50,17 @@
     },
     "backup": {
       "title": "Backup",
-      "lastExport": "Last export: {date}",
-      "neverExported": "You haven't exported a backup yet.",
-      "exported": "Backup exported.",
-      "noFiles": "Backups don't include your CV files yet. Keep your original PDFs."
+      "lastExport": "Last backup: {date}",
+      "neverExported": "You haven't downloaded a backup yet.",
+      "exported": "Backup downloaded.",
+      "noFiles": "Backups don't include your CV files yet. Keep your original PDFs.",
+      "help": "Saves a file with all your data on your computer."
     },
     "import": {
-      "label": "Import a backup",
-      "hint": "Choose a .json file exported from this app.",
-      "success": "Backup imported.",
-      "failedTitle": "The backup couldn't be imported",
+      "label": "Restore from backup",
+      "hint": "Choose a backup you have downloaded earlier.",
+      "success": "Your data has been restored.",
+      "failedTitle": "The backup couldn't be restored",
       "readFailed": "The file couldn't be opened.",
       "more": "…and {count} more"
     },
@@ -77,17 +78,17 @@
     }
   },
   "confirm": {
-    "exportFirst": "Export first: download a backup of your current data",
-    "exportFirstShort": "Export first",
-    "exportDone": "Backup exported.",
+    "exportFirst": "Download a backup of your current data before continuing",
+    "exportFirstShort": "Download a backup first",
+    "exportDone": "Backup downloaded.",
     "replace": {
       "title": "Replace your current data?",
-      "body": "Importing this backup replaces the data currently saved in this browser.",
+      "body": "Restoring from this backup replaces the data currently saved in this browser.",
       "button": "Replace my data"
     },
     "delete": {
       "title": "Delete all your data?",
-      "body": "Everything saved in this browser will be removed. Export a backup first if you might want it back.",
+      "body": "Everything saved in this browser will be removed. Download a backup first if you might want it back.",
       "button": "Yes, delete everything"
     }
   },
@@ -179,10 +180,10 @@
     "cvName": "CV: {name}",
     "linkOpens": "{host} (opens in a new tab)",
     "more": "More",
-    "closedWithReason": "Closed: {reason}"
+    "closedWithReason": "Closed: {reason}",
+    "notePrefix": "Note:"
   },
   "menu": {
-    "reply": "Got a reply",
     "toInterview": "Move to Interview",
     "toOffer": "Move to Offer",
     "back": "Move back",
@@ -194,7 +195,6 @@
   "announce": {
     "markedApplied": "Marked as applied: {company}",
     "movedTo": "Moved to {status}: {company}",
-    "replied": "Reply noted: {company}",
     "closed": "Closed: {company}",
     "reopened": "Reopened: {company}",
     "saved": "Saved: {company}",
@@ -293,7 +293,7 @@
       "not_pdf": "Only PDF files can be added. Choose a file that ends in .pdf.",
       "not_pdf_content": "This file is named .pdf, but its content isn't a PDF. Choose a different file.",
       "unreadable": "The file couldn't be read. Try choosing it again.",
-      "save_failed": "The CV couldn't be saved, so nothing was added. Export a backup of your data and try again.",
+      "save_failed": "The CV couldn't be saved, so nothing was added. Download a backup of your data and try again.",
       "quota": "This browser's storage is full, so the file wasn't added.",
       "blocked": "The file storage is in use by another tab of this app. Close the other tab and try again.",
       "unavailable": "This browser can't store files.",
@@ -302,7 +302,6 @@
   },
   "reply": {
     "none": "No reply yet",
-    "received": "Reply received",
     "followUp": "Time to follow up"
   },
   "cvPanel": {
@@ -313,13 +312,12 @@
     "open": "Open",
     "usedOne": "used in {count} application",
     "usedOther": "used in {count} applications",
-    "pdf": "PDF · {size}",
-    "noFile": "No file attached",
-    "openFor": "Open CV: {name}"
+    "openFor": "Open CV: {name}",
+    "fileMissing": "The file is missing from this browser. Add it again as a new CV."
   },
   "side": {
     "lastBackup": "Last backup: {date}",
-    "export": "Export"
+    "export": "Download"
   },
   "welcome": {
     "title": "A notepad for your job applications",
@@ -339,6 +337,6 @@
       "body": "Then the app counts the days for you and shows when it is time to follow up."
     },
     "addTitle": "Add your first job",
-    "tip": "Tip: export a backup now and then, so you always have a copy of your data."
+    "tip": "Tip: download a backup now and then, so you always have a copy of your data."
   }
 }

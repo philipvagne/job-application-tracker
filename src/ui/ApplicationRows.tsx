@@ -1,5 +1,6 @@
 import {
   daysSince,
+  firstNoteLine,
   hostOf,
   isHttpUrl,
   replyIndicator,
@@ -43,16 +44,24 @@ interface CvProps {
   onOpenCv: (cv: Cv) => void
 }
 
-/** The name of the CV linked to the application, and a note when its file is gone. */
+/** The name of the CV linked to the application. A missing file is explained in the CV card. */
 function CvName({ application, cvs }: Pick<CvProps, 'application' | 'cvs'>) {
-  const { t, fileStatus } = useApp()
+  const { t } = useApp()
   const cv = cvs.find((c) => c.id === application.cvId)
   if (cv === undefined) return null
+  return <span>{t('row.cvName', { name: cv.name })}</span>
+}
+
+/** The first line of the notes, as plain text. The CSS cuts it to one line. */
+function NotePreview({ application }: { application: Application }) {
+  const { t } = useApp()
+  const line = firstNoteLine(application.notes)
+  if (line === null) return null
   return (
-    <>
-      <span>{t('row.cvName', { name: cv.name })}</span>
-      {fileStatus(cv) === 'missing' && <span>{t('cvFile.missing')}</span>}
-    </>
+    <p className="row__note">
+      <span className="sr-only">{t('row.notePrefix')} </span>
+      {line}
+    </p>
   )
 }
 
@@ -77,7 +86,6 @@ function OpenCvButton({ application, cvs, onOpenCv }: CvProps) {
 
 const REPLY_TEXT = {
   no_reply_yet: 'reply.none',
-  replied: 'reply.received',
   follow_up: 'reply.followUp',
 } as const
 
@@ -110,6 +118,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv }: To
             <CvName application={application} cvs={cvs} />
           </p>
         )}
+        <NotePreview application={application} />
       </div>
       <div className="row__actions">
         <OpenCvButton application={application} cvs={cvs} onOpenCv={onOpenCv} />
@@ -158,6 +167,7 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
           {application.url !== '' && <HostLink url={application.url} />}
           <CvName application={application} cvs={cvs} />
         </p>
+        <NotePreview application={application} />
       </div>
       <div className="row__actions">
         {reply !== 'none' && <Reply kind={reply} />}
@@ -190,6 +200,7 @@ export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv }: Clos
           {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
           <CvName application={application} cvs={cvs} />
         </p>
+        <NotePreview application={application} />
       </div>
       <div className="row__actions">
         <OpenCvButton application={application} cvs={cvs} onOpenCv={onOpenCv} />
