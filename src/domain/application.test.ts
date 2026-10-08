@@ -4,6 +4,7 @@ import {
   createApplication,
   markApplied,
   newApplication,
+  newAppliedApplication,
   reopenTarget,
   updateApplication,
 } from './application'
@@ -237,10 +238,68 @@ describe('newApplication', () => {
     })
   })
 
-  it('reports an empty company and a bad link together', () => {
+  it('reports a bad link even when there is no company', () => {
     expect(newApplication({ id: 'n1', company: '   ', role: 'Dev', url: 'javascript:alert(1)' }, T0)).toEqual({
       ok: false,
-      error: ['company_required', 'invalid_url'],
+      error: ['invalid_url'],
+    })
+  })
+
+  it('needs a link or a company', () => {
+    expect(newApplication({ id: 'n1', company: ' ', role: 'Dev', url: ' ' }, T0)).toEqual({
+      ok: false,
+      error: ['company_or_link_required'],
+    })
+  })
+
+  it('accepts a link without a company, and a company without a link', () => {
+    const linkOnly = newApplication({ id: 'n1', company: '', role: '', url: ' https://a.se/job ' }, T0)
+    expect(linkOnly).toEqual({
+      ok: true,
+      value: { id: 'n1', company: '', role: '', url: 'https://a.se/job', status: 'to_apply', createdAt: T0 },
+    })
+    expect(newApplication({ id: 'n2', company: 'Acme', role: '', url: '' }, T0).ok).toBe(true)
+  })
+
+  it('still rejects links that are not http or https, with or without a company', () => {
+    for (const url of ['javascript:alert(1)', 'data:text/html,x', 'ftp://a.se', 'a.se', 'https://', 'https://a b.se']) {
+      expect(newApplication({ id: 'n', company: '', role: '', url }, T0)).toEqual({ ok: false, error: ['invalid_url'] })
+      expect(newApplication({ id: 'n', company: 'Acme', role: '', url }, T0)).toEqual({ ok: false, error: ['invalid_url'] })
+    }
+  })
+
+  it('rejects a link longer than 2048 characters', () => {
+    const url = `https://a.se/${'x'.repeat(2048)}`
+    expect(newApplication({ id: 'n', company: '', role: '', url }, T0)).toEqual({ ok: false, error: ['invalid_url'] })
+  })
+
+  it('keeps notes only when they have text', () => {
+    const blank = newApplication({ id: 'n', company: 'A', role: '', url: '', notes: '  ' }, T0)
+    expect(blank.ok && 'notes' in blank.value).toBe(false)
+    const text = newApplication({ id: 'n', company: 'A', role: '', url: '', notes: 'hej' }, T0)
+    expect(text.ok && text.value.notes).toBe('hej')
+  })
+})
+
+describe('newAppliedApplication', () => {
+  it('creates an applied application with appliedAt now and the CV', () => {
+    expect(newAppliedApplication({ id: 'a1', company: '', role: '', url: 'https://a.se/j', cvId: 'cv1' }, T0)).toEqual({
+      ok: true,
+      value: { id: 'a1', company: '', role: '', url: 'https://a.se/j', status: 'applied', createdAt: T0, appliedAt: T0, cvId: 'cv1' },
+    })
+  })
+
+  it('needs a CV', () => {
+    expect(newAppliedApplication({ id: 'a1', company: 'A', role: '', url: '', cvId: '' }, T0)).toEqual({
+      ok: false,
+      error: ['cv_required'],
+    })
+  })
+
+  it('checks the fields first', () => {
+    expect(newAppliedApplication({ id: 'a1', company: '', role: '', url: '', cvId: 'cv1' }, T0)).toEqual({
+      ok: false,
+      error: ['company_or_link_required'],
     })
   })
 })
@@ -266,8 +325,20 @@ describe('updateApplication', () => {
     expect(app).toEqual(make())
   })
 
-  it.each(['', '   ', '\t'])('rejects an empty company %j', (company) => {
-    expect(updateApplication(make(), { company })).toEqual({ ok: false, error: ['company_required'] })
+  it.each(['', '   ', '\t'])('rejects an empty company %j when there is no link', (company) => {
+    expect(updateApplication(make({ url: '' }), { company })).toEqual({ ok: false, error: ['company_or_link_required'] })
+  })
+
+  it.each(['', '   '])('allows an empty company %j when there is a link', (company) => {
+    const r = updateApplication(make({ url: 'https://a.se/j' }), { company })
+    expect(r.ok && [r.value.company, r.value.url]).toEqual(['', 'https://a.se/j'])
+  })
+
+  it('rejects removing the link from an application that has no company', () => {
+    expect(updateApplication(make({ company: '', url: 'https://a.se/j' }), { url: '' })).toEqual({
+      ok: false,
+      error: ['company_or_link_required'],
+    })
   })
 
   it('allows an empty role and an empty link', () => {

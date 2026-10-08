@@ -11,6 +11,23 @@ export function addApplications(state: AppState, applications: readonly Applicat
   return { ...state, applications: [...state.applications, ...applications] }
 }
 
+/**
+ * Adds an application that is already applied, and remembers its CV as the last used. Refused,
+ * changing nothing, if it is not applied, has no appliedAt, or its CV does not exist.
+ */
+export function addAppliedApplication(
+  state: AppState,
+  application: Application,
+): Result<AppState, 'not_applied' | 'unknown_cv'> {
+  if (application.status !== 'applied' || application.appliedAt === undefined) {
+    return { ok: false, error: 'not_applied' }
+  }
+  const cvId = application.cvId
+  if (cvId === undefined || !state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
+  const next = addApplications(state, [application])
+  return { ok: true, value: { ...next, settings: { ...next.settings, lastCvId: cvId } } }
+}
+
 /** Swaps in an edited application with the same id. Unchanged state if the id is unknown. */
 export function replaceApplication(state: AppState, application: Application): AppState {
   if (!state.applications.some((a) => a.id === application.id)) return state

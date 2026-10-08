@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import type { Application } from '../domain'
+import { applicationTitle, type Application } from '../domain'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
 
@@ -22,7 +22,7 @@ export function NoteDialog({ application, onClose }: NoteDialogProps) {
       {application !== null && (
         <>
           <h2 id={titleId} className="dialog__title">
-            {t('note.title', { company: application.company })}
+            {t('note.title', { company: applicationTitle(application) })}
           </h2>
           <div className="dialog__body" role="region" aria-labelledby={titleId} tabIndex={0}>
             <p className="note-full">{application.notes}</p>

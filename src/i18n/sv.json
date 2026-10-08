@@ -97,35 +97,40 @@
     "role": "Roll",
     "link": "Länk",
     "notes": "Anteckningar",
-    "companyRequired": "Ange ett företagsnamn.",
+    "companyOrLinkRequired": "Ange en länk eller ett företagsnamn.",
     "linkInvalid": "Ange en länk som börjar med http:// eller https://."
   },
   "quickAdd": {
     "title": "Lägg till ett jobb",
-    "add": "Lägg till",
-    "added": "Tillagd: {company}",
+    "saveToApply": "Spara i Att söka",
+    "saveApplied": "Spara som redan sökt",
+    "moreToggle": "+ Företag, roll och anteckning",
+    "addedToApply": "Sparad i Att söka: {company}",
+    "addedApplied": "Sparad som sökt: {company}",
+    "duplicate": "Den här länken finns redan i din lista: {name} ({status}).",
+    "addAnyway": "Lägg till ändå",
     "linkLabel": "Länk till jobbannonsen",
-    "linkHelp": "Valfri. Med en länk kan du öppna annonsen från listan.",
+    "linkHelp": "Räcker för att spara jobbet. Inget hämtas från sidan; företagsnamnet fyller du i själv om du vill.",
     "cvLabel": "CV du skickar med",
-    "cvHelp": "Används när du markerar jobbet som sökt. Så ser du senare vilket CV du använde.",
-    "noCv": "Inget CV än"
+    "cvHelp": "Följer med när du sparar som sökt, eller när du markerar jobbet som sökt senare.",
+    "noCv": "Inget CV"
   },
   "paste": {
     "summary": "+ Lägg till flera länkar på en gång",
     "label": "En länk eller jobbtitel per rad",
-    "hint": "Högst 200 rader. Tomma rader hoppas över.",
+    "hint": "Högst 200 rader. Tomma rader hoppas över. Allt hamnar i Att söka.",
     "add": "Lägg till alla",
     "empty": "Klistra in minst en rad först.",
-    "result": "Tillagda: {added}. Överhoppade rader: {skipped}."
+    "result": "Tillagda: {added}. Redan i listan: {duplicates}. Överhoppade rader: {skipped}."
   },
   "cv": {
-    "choose": "Välj ett CV",
     "addOption": "Lägg till ett CV",
     "nameLabel": "CV-namn",
     "save": "Spara CV",
     "saveAndApply": "Spara och markera som sökt",
     "firstPrompt": "Vilket CV använder du? Ge det ett namn. Nästa gång väljer du det i en lista.",
-    "required": "Välj ett CV först.",
+    "required": "Välj vilket CV du skickade med.",
+    "requiredNone": "Lägg till ett CV först, så vet du senare vad du skickade.",
     "nameRequired": "Ange ett namn på CV:t.",
     "nameTaken": "Du har redan ett CV med det namnet."
   },
@@ -178,6 +183,7 @@
     "markApplied": "Markera som sökt",
     "appliedWhen": "Sökt {when}",
     "cvName": "CV: {name}",
+    "addedOn": "Tillagd {date}",
     "linkOpens": "{host} (öppnas i en ny flik)",
     "more": "Mer",
     "closedWithReason": "Avslutad: {reason}",
@@ -270,6 +276,7 @@
     "wrong_type": "{path}: förväntade {expected}, men hittade {actual}.",
     "invalid_value": "{path}: värdet är inte tillåtet. Tillåtna värden: {allowed}.",
     "empty_value": "{path}: värdet får inte vara tomt.",
+    "company_or_link_required": "{path}: ange minst en länk eller ett företagsnamn.",
     "invalid_date": "{path}: det här är inte ett giltigt datum.",
     "invalid_url": "{path}: det här är inte en länk som börjar med http:// eller https://.",
     "duplicate_id": "{path}: id:t “{id}” används mer än en gång.",
@@ -330,7 +337,7 @@
     },
     "step2": {
       "title": "Lägg till ett jobb du vill söka",
-      "body": "Fyll i företaget och klistra gärna in länken till annonsen."
+      "body": "Klistra in länken till annonsen. Företag och roll kan du lägga till om du vill."
     },
     "step3": {
       "title": "Markera när du har sökt",

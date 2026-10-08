@@ -3,6 +3,7 @@ import {
   MAX_CV_FILE_BYTES,
   MAX_FILE_NAME_LENGTH,
   SELECTABLE_CLOSED_REASONS,
+  applicationTitle,
   applicationsThisWeek,
   applicationsWithStatus,
   countsByStatus,
@@ -23,7 +24,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { CV_ADD_BUTTON_ID, CvPanel } from './CvPanel'
 import { EditDialog } from './EditDialog'
 import { NoteDialog } from './NoteDialog'
-import { COMPANY_FIELD_ID, QuickAdd } from './QuickAdd'
+import { LINK_FIELD_ID, QuickAdd } from './QuickAdd'
 import type { MenuAction } from './RowMenu'
 import { SideNote } from './SideNote'
 import { StatusTabs, tabId } from './StatusTabs'
@@ -62,8 +63,10 @@ export function Tracker() {
   const cvFileRef = useRef<HTMLInputElement>(null)
 
   const [message, setMessage] = useState('')
-  const [pickedCvId, setPickedCvId] = useState('')
-  const [cvSelectError, setCvSelectError] = useState(false)
+  // null: the user has not picked yet, so the last used CV is shown. '' is an explicit "No CV".
+  const [pickedCvId, setPickedCvId] = useState<string | null>(null)
+  // 'choose': pick one of the CVs. 'add': there are none, add one first.
+  const [cvSelectError, setCvSelectError] = useState<'choose' | 'add' | null>(null)
   // The inline CV form. `applyId` is the application waiting for a first CV, if any.
   const [cvForm, setCvForm] = useState<{ applyId: string | null } | null>(null)
   const [cvName, setCvName] = useState('')
@@ -91,9 +94,10 @@ export function Tracker() {
   const firstVisit = applications.length === 0 && cvs.length === 0
   const weekCount = applicationsThisWeek(applications, now)
 
-  // The CV in the picker: the one chosen, else the last one used, if it still exists.
+  // The CV in the picker: the one chosen (or "No CV"), else the last one used, if it still exists.
   const hasCv = (id: string): boolean => cvs.some((cv) => cv.id === id)
-  const cvId = hasCv(pickedCvId) ? pickedCvId : settings.lastCvId !== undefined && hasCv(settings.lastCvId) ? settings.lastCvId : ''
+  const fallbackCvId = settings.lastCvId !== undefined && hasCv(settings.lastCvId) ? settings.lastCvId : ''
+  const cvId = pickedCvId === null ? fallbackCvId : hasCv(pickedCvId) ? pickedCvId : ''
 
   useEffect(() => {
     if (focusIds.length === 0) return
@@ -124,19 +128,19 @@ export function Tracker() {
 
   /**
    * Where focus goes when a row leaves its tab: a neighbour's button in that tab, else the tab
-   * itself, else the Company field. Call it with the application as it was before the change.
+   * itself, else the link field. Call it with the application as it was before the change.
    */
   function neighbourIds(application: Application): string[] {
     const list = applicationsWithStatus(applications, application.status)
     const i = list.findIndex((a) => a.id === application.id)
     const ids = [list[i + 1], list[i - 1]].filter((a): a is Application => a !== undefined).map(focusIdOf)
-    return [...ids, tabId(application.status), COMPANY_FIELD_ID]
+    return [...ids, tabId(application.status), LINK_FIELD_ID]
   }
 
   function applyNow(application: Application, chosenCvId: string): void {
     const next = neighbourIds(application)
     if (!actions.markApplied(application.id, chosenCvId)) return
-    setMessage(t('announce.markedApplied', { company: application.company }))
+    setMessage(t('announce.markedApplied', { company: applicationTitle(application) }))
     setFocusIds(next)
   }
 
@@ -154,15 +158,26 @@ export function Tracker() {
       return
     }
     if (cvId === '') {
-      setCvSelectError(true)
+      setCvSelectError('choose')
       cvSelectRef.current?.focus()
       return
     }
     applyNow(application, cvId)
   }
 
+  /** "Save as already applied" without a CV: ask for one, the same way "Mark as applied" does. */
+  function onNeedsCv(noCvs: boolean): void {
+    if (noCvs) {
+      setCvSelectError('add')
+      openCvForm(null)
+      return
+    }
+    setCvSelectError('choose')
+    cvSelectRef.current?.focus()
+  }
+
   function onCvSelect(value: string): void {
-    setCvSelectError(false)
+    setCvSelectError(null)
     if (value === ADD_CV) {
       openCvForm(null)
       return
@@ -210,7 +225,7 @@ export function Tracker() {
     }
 
     setPickedCvId(created.id)
-    setCvSelectError(false)
+    setCvSelectError(null)
     setCvForm(null)
     setCvFile(null)
     const waiting = pending === null ? undefined : applications.find((a) => a.id === pending)
@@ -240,7 +255,7 @@ export function Tracker() {
   function moveTo(application: Application, to: Exclude<Status, 'closed'>): void {
     const result = actions.changeStatus(application.id, to)
     if (!result.ok) return
-    setMessage(t('announce.movedTo', { status: t(`status.${to}`), company: application.company }))
+    setMessage(t('announce.movedTo', { status: t(`status.${to}`), company: applicationTitle(application) }))
     setFocusIds(neighbourIds(application))
   }
 
@@ -275,13 +290,13 @@ export function Tracker() {
     if (kind === 'delete') {
       const next = neighbourIds(application)
       actions.deleteApplication(application.id)
-      setMessage(t('announce.deleted', { company: application.company }))
+      setMessage(t('announce.deleted', { company: applicationTitle(application) }))
       setFocusIds(next)
       return
     }
     const result = actions.changeStatus(application.id, 'closed', closeReason)
     if (!result.ok) return
-    setMessage(t('announce.closed', { company: application.company }))
+    setMessage(t('announce.closed', { company: applicationTitle(application) }))
     setFocusIds(neighbourIds(application))
   }
 
@@ -290,7 +305,7 @@ export function Tracker() {
     const next = neighbourIds(application)
     const result = actions.changeStatus(application.id, to)
     if (!result.ok) return
-    setMessage(t('announce.reopened', { company: application.company }))
+    setMessage(t('announce.reopened', { company: applicationTitle(application) }))
     setFocusIds(next)
   }
 
@@ -356,7 +371,7 @@ export function Tracker() {
       </form>
     )
 
-  // The CV that goes with the next "mark as applied". It is not stored on the job when it is added.
+  // The CV for "Save as already applied" and for the next "mark as applied". Saving to To apply does not store it on the job.
   const cvFieldNode = (
     <div className="field">
       <label htmlFor={cvSelectId}>{t('quickAdd.cvLabel')}</label>
@@ -366,10 +381,10 @@ export function Tracker() {
         className="input input--select"
         value={cvId}
         onChange={(e) => onCvSelect(e.target.value)}
-        aria-invalid={cvSelectError}
-        aria-describedby={cvSelectError ? `${cvHelpId} ${cvErrorId}` : cvHelpId}
+        aria-invalid={cvSelectError !== null}
+        aria-describedby={cvSelectError !== null ? `${cvHelpId} ${cvErrorId}` : cvHelpId}
       >
-        {cvId === '' && <option value="">{cvs.length === 0 ? t('quickAdd.noCv') : t('cv.choose')}</option>}
+        <option value="">{t('quickAdd.noCv')}</option>
         {cvs.map((cv) => (
           <option key={cv.id} value={cv.id}>
             {cv.name}
@@ -381,7 +396,7 @@ export function Tracker() {
         {t('quickAdd.cvHelp')}
       </p>
       <p id={cvErrorId} className="error">
-        {cvSelectError ? t('cv.required') : ''}
+        {cvSelectError === 'choose' ? t('cv.required') : cvSelectError === 'add' ? t('cv.requiredNone') : ''}
       </p>
     </div>
   )
@@ -410,6 +425,10 @@ export function Tracker() {
       <QuickAdd
         heading={firstVisit ? t('welcome.addTitle') : t('quickAdd.title')}
         cvField={cvFieldNode}
+        cvId={cvId}
+        onNeedsCv={onNeedsCv}
+        onSaved={(application) => setTab(application.status)}
+        onPasted={() => setTab('to_apply')}
         onAnnounce={setMessage}
       />
 
@@ -455,7 +474,7 @@ export function Tracker() {
           confirm === null
             ? ''
             : t(confirm.kind === 'delete' ? 'confirmApp.delete.body' : 'confirmApp.close.body', {
-                company: confirm.application.company,
+                company: applicationTitle(confirm.application),
               })
         }
         confirmLabel={confirm?.kind === 'delete' ? t('confirmApp.delete.button') : t('confirmApp.close.button')}

@@ -16,7 +16,7 @@ export type TransitionError =
   | 'closed_reason_required'
   | 'cv_required'
 
-export type ApplicationFieldError = 'company_required' | 'invalid_url'
+export type ApplicationFieldError = 'company_or_link_required' | 'invalid_url'
 
 export interface ApplicationChanges {
   company?: string
@@ -25,14 +25,17 @@ export interface ApplicationChanges {
   notes?: string
 }
 
-/** Trims the text fields and returns what is wrong with them. Role may be empty; so may the link. */
+/**
+ * Trims the text fields and returns what is wrong with them. An application needs a link or
+ * a company (either is enough). A link, if there is one, must be http or https. Role may be empty.
+ */
 export function validateApplicationFields(fields: {
   company: string
   url: string
 }): ApplicationFieldError[] {
   const errors: ApplicationFieldError[] = []
-  if (fields.company.trim() === '') errors.push('company_required')
   const url = fields.url.trim()
+  if (fields.company.trim() === '' && url === '') errors.push('company_or_link_required')
   if (url !== '' && !isHttpUrl(url)) errors.push('invalid_url')
   return errors
 }
@@ -48,11 +51,11 @@ export function createApplication(input: NewApplicationInput, now: IsoDate): App
     createdAt: now,
   }
   if (input.cvId !== undefined) application.cvId = input.cvId
-  if (input.notes !== undefined) application.notes = input.notes
+  if (input.notes !== undefined && input.notes.trim() !== '') application.notes = input.notes
   return application
 }
 
-/** Like createApplication, but checks company and link first. */
+/** Like createApplication, but checks company and link first (see validateApplicationFields). */
 export function newApplication(
   input: NewApplicationInput,
   now: IsoDate,
@@ -63,9 +66,23 @@ export function newApplication(
 }
 
 /**
- * Edits company, role, link and notes. Company must not be empty after trimming, and a
- * link, if there is one, must be http or https. Fields left out stay as they are; empty
- * notes are removed.
+ * Like newApplication, but the result is already applied: status applied, appliedAt now, and
+ * the CV used. The CV is required, the same as when marking an application as applied.
+ */
+export function newAppliedApplication(
+  input: NewApplicationInput & { cvId: string },
+  now: IsoDate,
+): Result<Application, (ApplicationFieldError | 'cv_required')[]> {
+  const errors = validateApplicationFields(input)
+  if (errors.length > 0) return { ok: false, error: errors }
+  if (input.cvId === '') return { ok: false, error: ['cv_required'] }
+  return { ok: true, value: { ...createApplication(input, now), status: 'applied', appliedAt: now } }
+}
+
+/**
+ * Edits company, role, link and notes. Like a new application, it needs a link or a company
+ * after trimming, and a link, if there is one, must be http or https. Fields left out stay
+ * as they are; empty notes are removed.
  */
 export function updateApplication(
   application: Application,

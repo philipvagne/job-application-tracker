@@ -13,7 +13,7 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 
 ## Version 1: what is in
 
-1. **Link-first quick add.** Paste a link, optionally choose a CV from a dropdown, then "Add to apply list" or "Add as applied". Company and role are optional and editable. From a pasted link only the website name can be filled in.
+1. **Link-first quick add.** Paste a link, choose a CV from a dropdown, then "Save to To apply" or "Save as already applied" (the second needs a CV). A link or a company name is enough; company, role and a note are optional extras behind a button. Without a company the list shows the website name from the link (nothing is fetched). A link already in the list gives a gentle warning with "Add anyway".
 2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. No server, no AI.
 3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used is linked to the application and opens from its row.
 4. **Application record.** Link (opens from the row), CV file, notes, and dates.

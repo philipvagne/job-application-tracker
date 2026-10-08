@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addAppliedApplication,
   addApplications,
   addCv,
   deleteApplication,
@@ -208,5 +209,24 @@ describe('linkCv', () => {
     const before = two()
     linkCv(before, 'a1', 'cv2')
     expect(before.applications[0]).toEqual(app('a1'))
+  })
+})
+
+describe('addAppliedApplication', () => {
+  const applied = app('n1', { status: 'applied', appliedAt: T1, cvId: 'cv1' })
+
+  it('adds it at the end and remembers the CV as the last used, without mutating', () => {
+    const before = state()
+    const r = addAppliedApplication(before, applied)
+    expect(r.ok && r.value.applications.map((a) => a.id)).toEqual(['a1', 'a2', 'n1'])
+    expect(r.ok && r.value.settings.lastCvId).toBe('cv1')
+    expect(before).toEqual(state())
+  })
+
+  it('refuses an unknown CV, a missing CV, and an application that is not applied', () => {
+    expect(addAppliedApplication(state(), { ...applied, cvId: 'nope' })).toEqual({ ok: false, error: 'unknown_cv' })
+    const { cvId: _cv, ...noCv } = applied
+    expect(addAppliedApplication(state(), noCv)).toEqual({ ok: false, error: 'unknown_cv' })
+    expect(addAppliedApplication(state(), app('n2'))).toEqual({ ok: false, error: 'not_applied' })
   })
 })

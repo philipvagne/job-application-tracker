@@ -293,7 +293,7 @@ describe('clearAllData', () => {
 })
 
 describe('data saved by version 1 of the app', () => {
-  it('loads without being treated as unreadable, and is saved as version 2 next time', () => {
+  it('loads without being treated as unreadable, and is saved as version 3 next time', () => {
     const backend = new FakeStorage()
     const v1 = { ...exportData(sample), version: 1 }
     backend.data.set(STATE_KEY, JSON.stringify(v1))
@@ -303,13 +303,13 @@ describe('data saved by version 1 of the app', () => {
     expect(loaded.state).toEqual(sample)
 
     store.saveState(loaded.state)
-    expect((JSON.parse(backend.data.get(STATE_KEY) ?? '{}') as { version: number }).version).toBe(2)
+    expect((JSON.parse(backend.data.get(STATE_KEY) ?? '{}') as { version: number }).version).toBe(3)
     expect(backend.data.has(CORRUPT_BACKUP_KEY)).toBe(false)
   })
 
   it('still backs up a file with a version it does not know', () => {
     const backend = new FakeStorage()
-    backend.data.set(STATE_KEY, JSON.stringify({ ...exportData(sample), version: 3 }))
+    backend.data.set(STATE_KEY, JSON.stringify({ ...exportData(sample), version: 4 }))
     const loaded = createStateStore(createLocalStorage(backend)).loadState()
     expect(loaded.recovered).toBe(true)
     expect(backend.data.has(CORRUPT_BACKUP_KEY)).toBe(true)

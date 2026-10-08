@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
-import type { Application, ApplicationFieldError } from '../domain'
+import { applicationTitle, type Application, type ApplicationFieldError } from '../domain'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
 
@@ -47,7 +47,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
   const [cvId, setCvId] = useState(application.cvId ?? '')
   const [errors, setErrors] = useState<ApplicationFieldError[]>([])
 
-  const companyInvalid = errors.includes('company_required')
+  const companyInvalid = errors.includes('company_or_link_required')
   const linkInvalid = errors.includes('invalid_url')
   const chosenCv = state.cvs.find((cv) => cv.id === cvId)
   const chosenStatus = chosenCv === undefined ? null : fileStatus(chosenCv)
@@ -65,10 +65,11 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
     const result = actions.editApplication(application.id, { company, role, url: link, notes })
     if (!result.ok) {
       setErrors(result.error)
+      document.getElementById(result.error.includes('company_or_link_required') ? companyId : linkId)?.focus()
       return
     }
     if (cvId !== (application.cvId ?? '')) actions.linkCv(application.id, cvId === '' ? null : cvId)
-    onSaved(result.value.company)
+    onSaved(applicationTitle(result.value))
     onClose()
   }
 
@@ -84,7 +85,6 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
           className="input"
           type="text"
           autoComplete="off"
-          required
           data-autofocus
           value={company}
           onChange={(e) => setCompany(e.target.value)}
@@ -92,7 +92,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
           aria-describedby={companyInvalid ? companyErrorId : undefined}
         />
         <p id={companyErrorId} className="error">
-          {companyInvalid ? t('field.companyRequired') : ''}
+          {companyInvalid ? t('field.companyOrLinkRequired') : ''}
         </p>
       </div>
       <div className="field">
@@ -116,8 +116,8 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
           autoComplete="off"
           value={link}
           onChange={(e) => setLink(e.target.value)}
-          aria-invalid={linkInvalid}
-          aria-describedby={linkInvalid ? linkErrorId : undefined}
+          aria-invalid={linkInvalid || companyInvalid}
+          aria-describedby={[companyInvalid ? companyErrorId : '', linkInvalid ? linkErrorId : ''].filter(Boolean).join(' ') || undefined}
         />
         <p id={linkErrorId} className="error">
           {linkInvalid ? t('field.linkInvalid') : ''}

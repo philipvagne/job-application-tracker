@@ -106,3 +106,32 @@ describe('reducer', () => {
     expect(after.settings).toEqual({ reminderDays: 14, language: 'sv' })
   })
 })
+
+describe('reducer addApplied', () => {
+  const applied = {
+    id: 'n1',
+    company: '',
+    role: '',
+    url: 'https://a.se/job',
+    status: 'applied' as const,
+    cvId: 'cv1',
+    createdAt: '2026-10-07T08:00:00.000Z',
+    appliedAt: '2026-10-07T08:00:00.000Z',
+  }
+
+  it('adds the application and sets the last used CV in one step', () => {
+    const after = reducer(stateWithData(), { type: 'addApplied', application: applied })
+    expect(after.applications.map((a) => a.id)).toEqual(['a1', 'n1'])
+    expect(after.settings.lastCvId).toBe('cv1')
+  })
+
+  it('returns the same object when the CV does not exist', () => {
+    const before = stateWithData()
+    expect(reducer(before, { type: 'addApplied', application: { ...applied, cvId: 'nope' } })).toBe(before)
+  })
+
+  it('addApplications accepts an application with only a link', () => {
+    const only = { id: 'n2', company: '', role: '', url: 'https://a.se/x', status: 'to_apply' as const, createdAt: applied.createdAt }
+    expect(reducer(stateWithData(), { type: 'addApplications', applications: [only] }).applications).toHaveLength(2)
+  })
+})

@@ -77,6 +77,7 @@ describe('formatImportError', () => {
       'wrong_type',
       'invalid_value',
       'empty_value',
+      'company_or_link_required',
       'invalid_date',
       'invalid_url',
       'duplicate_id',

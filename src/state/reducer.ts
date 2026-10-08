@@ -1,4 +1,5 @@
 import {
+  addAppliedApplication,
   addApplications,
   addCv,
   deleteApplication,
@@ -24,6 +25,7 @@ export type Action =
   | { type: 'setShowWeekSummary'; show: boolean }
   | { type: 'markExported'; now: IsoDate }
   | { type: 'addApplications'; applications: Application[] }
+  | { type: 'addApplied'; application: Application }
   | { type: 'replaceApplication'; application: Application }
   | { type: 'deleteApplication'; id: string }
   | { type: 'addCv'; id: string; name: string; file?: CvFile; now?: IsoDate }
@@ -49,6 +51,10 @@ export function reducer(state: AppState, action: Action): AppState {
       return markExported(state, action.now)
     case 'addApplications':
       return addApplications(state, action.applications)
+    case 'addApplied': {
+      const result = addAppliedApplication(state, action.application)
+      return result.ok ? result.value : state
+    }
     case 'replaceApplication':
       return replaceApplication(state, action.application)
     case 'deleteApplication':

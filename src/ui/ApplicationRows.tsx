@@ -1,8 +1,10 @@
 import {
+  applicationTitle,
   daysSince,
   notePreview,
   hostOf,
   isHttpUrl,
+  linkHint,
   replyIndicator,
   type Application,
   type Cv,
@@ -11,13 +13,27 @@ import {
 import { useApp } from '../state/AppContext'
 import { RowMenu, type MenuAction } from './RowMenu'
 
+/** Without a company the title is the website name, so a path hint (when there is no role) helps tell rows apart. */
 function RowTitle({ application }: { application: Application }) {
+  const fromLink = application.company.trim() === ''
+  const hint = fromLink && application.role === '' ? linkHint(application.url) : null
   return (
     <p className="row__title">
-      <strong>{application.company}</strong>
+      <strong>{applicationTitle(application)}</strong>
       {application.role !== '' && <span className="row__role"> · {application.role}</span>}
+      {hint !== null && <span className="row__role"> · {hint}</span>}
     </p>
   )
+}
+
+/** "Added 8 Oct", only for a row whose title comes from the link, as one more way to tell rows apart. */
+function AddedOn({ application }: { application: Application }) {
+  const { t, language } = useApp()
+  if (application.company.trim() !== '') return null
+  const added = new Date(application.createdAt)
+  if (Number.isNaN(added.getTime())) return null
+  const date = new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short' }).format(added)
+  return <span>{t('row.addedOn', { date })}</span>
 }
 
 /** The link as its host only. Only http(s) links are ever used as an href. */
@@ -75,7 +91,7 @@ function NotePreview({ application, onShowNote }: { application: Application } &
           <button
             type="button"
             className="btn btn--text"
-            aria-label={t('row.actionFor', { action: t('note.showFull'), company: application.company })}
+            aria-label={t('row.actionFor', { action: t('note.showFull'), company: applicationTitle(application) })}
             onClick={() => onShowNote(application)}
           >
             {t('note.showAll')}
@@ -97,7 +113,7 @@ function OpenCvButton({ application, cvs, onOpenCv }: CvProps) {
     <button
       type="button"
       className="btn btn--small"
-      aria-label={t('row.actionFor', { action: t('cvFile.open'), company: application.company })}
+      aria-label={t('row.actionFor', { action: t('cvFile.open'), company: applicationTitle(application) })}
       onClick={() => onOpenCv(cv)}
     >
       {t('cvFile.open')}
@@ -137,6 +153,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onSh
           <p className="row__meta">
             {application.url !== '' && <HostLink url={application.url} />}
             <CvName application={application} cvs={cvs} />
+            <AddedOn application={application} />
           </p>
         )}
         <NotePreview application={application} onShowNote={onShowNote} />
@@ -147,7 +164,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onSh
           type="button"
           id={`apply-${application.id}`}
           className="btn btn--primary"
-          aria-label={t('row.actionFor', { action: t('row.markApplied'), company: application.company })}
+          aria-label={t('row.actionFor', { action: t('row.markApplied'), company: applicationTitle(application) })}
           onClick={onApplied}
         >
           {t('row.markApplied')}
@@ -187,6 +204,7 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
           </span>
           {application.url !== '' && <HostLink url={application.url} />}
           <CvName application={application} cvs={cvs} />
+          <AddedOn application={application} />
         </p>
         <NotePreview application={application} onShowNote={onShowNote} />
       </div>
@@ -206,7 +224,7 @@ interface ClosedRowProps extends CvProps, NoteProps {
 
 export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShowNote }: ClosedRowProps) {
   const { t } = useApp()
-  const company = application.company
+  const company = applicationTitle(application)
   const reason = application.closedReason === undefined ? null : t(`closedReason.${application.closedReason}`)
   const buttons: { label: string; onClick: () => void }[] = [
     { label: t('menu.reopen'), onClick: onReopen },
@@ -220,6 +238,7 @@ export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShow
         <p className="row__meta">
           {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
           <CvName application={application} cvs={cvs} />
+          <AddedOn application={application} />
         </p>
         <NotePreview application={application} onShowNote={onShowNote} />
       </div>

@@ -5,6 +5,7 @@ import {
   cvFileStatus,
   isBackupDue,
   linkCv,
+  newAppliedApplication,
   newApplication,
   parsePastedList,
   updateApplication,
@@ -72,10 +73,24 @@ export interface AppContextValue {
     clearUnreadable(): void
     dismissSaveError(): void
     dismissBackupReminder(): void
-    /** Adds a to-apply application. Fails, changing nothing, if company or link is not acceptable. */
-    addApplication(input: { company: string; role: string; url: string }): Result<Application, ApplicationFieldError[]>
-    /** Adds every usable line of pasted text. Returns how many were added and how many lines were skipped. */
-    addPasted(text: string): { added: number; skipped: number }
+    /** Adds a to-apply application. Fails, changing nothing, if there is no link or company, or the link is not acceptable. */
+    addApplication(input: { company: string; role: string; url: string; notes?: string }): Result<Application, ApplicationFieldError[]>
+    /**
+     * Adds an application that is already applied, with this CV, and remembers the CV. Fails,
+     * changing nothing, if the fields are not acceptable or the CV does not exist.
+     */
+    addAppliedApplication(input: {
+      company: string
+      role: string
+      url: string
+      notes?: string
+      cvId: string
+    }): Result<Application, (ApplicationFieldError | 'cv_required')[]>
+    /**
+     * Adds every usable line of pasted text as to-apply. Returns how many were added, how many
+     * links were already in the list, and how many lines were skipped.
+     */
+    addPasted(text: string): { added: number; duplicates: number; skipped: number }
     editApplication(id: string, changes: ApplicationChanges): Result<Application, ApplicationFieldError[]>
     deleteApplication(id: string): void
     /** Adds a CV and returns it. Fails if the name is empty or already used. */
@@ -273,8 +288,18 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         return result
       },
 
+      addAppliedApplication(input) {
+        const result = newAppliedApplication({ id: crypto.randomUUID(), ...input }, nowIso())
+        if (!result.ok) return result
+        const before = stateRef.current
+        commit({ type: 'addApplied', application: result.value })
+        // The CV was not found: nothing changed.
+        if (stateRef.current === before) return { ok: false, error: ['cv_required'] }
+        return result
+      },
+
       addPasted(text) {
-        const { items, skipped } = parsePastedList(text)
+        const { items, skipped, duplicates } = parsePastedList(text, stateRef.current.applications)
         const now = nowIso()
         const applications: Application[] = []
         for (const item of items) {
@@ -282,7 +307,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
           if (result.ok) applications.push(result.value)
         }
         commit({ type: 'addApplications', applications })
-        return { added: applications.length, skipped: skipped + (items.length - applications.length) }
+        return { added: applications.length, duplicates, skipped: skipped + (items.length - applications.length) }
       },
 
       editApplication(id, changes) {

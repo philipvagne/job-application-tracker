@@ -69,7 +69,7 @@ function mutateApp(change: (a: Record<string, unknown>) => void, index = 1): unk
 describe('exportData', () => {
   it('produces a versioned object', () => {
     const out = exportData(state)
-    expect(out.version).toBe(2)
+    expect(out.version).toBe(3)
     expect(out.applications).toHaveLength(3)
   })
 
@@ -131,15 +131,15 @@ describe('importData rejects bad input without throwing', () => {
 
   it('reports a missing or unsupported version', () => {
     expect(errorsOf({})).toEqual([{ code: 'missing_field', path: 'version' }])
-    expect(errorsOf({ ...valid(), version: 3 })).toEqual([
-      { code: 'unsupported_version', path: 'version', params: { supported: 2, found: 3 } },
+    expect(errorsOf({ ...valid(), version: 4 })).toEqual([
+      { code: 'unsupported_version', path: 'version', params: { supported: 3, found: 4 } },
     ])
     expect(errorsOf({ ...valid(), version: 0 })[0]?.code).toBe('unsupported_version')
-    expect(errorsOf({ ...valid(), version: '2' })[0]?.code).toBe('unsupported_version')
+    expect(errorsOf({ ...valid(), version: '3' })[0]?.code).toBe('unsupported_version')
     expect(errorsOf({ ...valid(), version: null })[0]).toEqual({
       code: 'unsupported_version',
       path: 'version',
-      params: { supported: 2, found: 'null' },
+      params: { supported: 3, found: 'null' },
     })
   })
 
@@ -314,12 +314,31 @@ describe('importData rejects bad input without throwing', () => {
     expect(r.ok && [r.state.applications[1]?.role, r.state.applications[1]?.url]).toEqual(['', ''])
   })
 
-  it('rejects an empty or blank company', () => {
+  it('rejects an empty or blank company when there is no link', () => {
     for (const company of ['', '   ']) {
-      expect(errorsOf(mutateApp((a) => (a['company'] = company)))).toEqual([
-        { code: 'empty_value', path: 'applications[1].company' },
+      expect(errorsOf(mutateApp((a) => { a['company'] = company; a['url'] = '' }))).toEqual([
+        { code: 'company_or_link_required', path: 'applications[1]' },
       ])
     }
+  })
+
+  it('accepts an empty company when there is a link', () => {
+    const r = importData(mutateApp((a) => { a['company'] = ''; a['url'] = 'https://a.se/job' }))
+    expect(r.ok && [r.state.applications[1]?.company, r.state.applications[1]?.url]).toEqual(['', 'https://a.se/job'])
+  })
+
+  it('still rejects a bad link when the company is empty', () => {
+    expect(errorsOf(mutateApp((a) => { a['company'] = ''; a['url'] = 'javascript:alert(1)' }))).toEqual([
+      { code: 'invalid_url', path: 'applications[1].url' },
+    ])
+  })
+
+  it('round-trips an application with only a link', () => {
+    const only: AppState = {
+      ...state,
+      applications: [{ id: 'only', company: '', role: '', url: 'https://a.se/job', status: 'to_apply', createdAt: '2026-10-01T09:00:00.000Z' }],
+    }
+    expect(importData(JSON.parse(JSON.stringify(exportData(only))))).toEqual({ ok: true, state: only })
   })
 
   it('rejects links that are not http or https', () => {
@@ -418,14 +437,14 @@ describe('importData rejects bad input without throwing', () => {
 })
 
 describe('version 1 files', () => {
-  it('are upgraded and read like version 2', () => {
+  it('are upgraded and read like the current version', () => {
     const v1 = { ...valid(), version: 1 }
     expect(importData(v1)).toEqual({ ok: true, state })
   })
 
-  it('export again as version 2', () => {
+  it('export again as version 3', () => {
     const r = importData({ ...valid(), version: 1 })
-    expect(r.ok && exportData(r.state).version).toBe(2)
+    expect(r.ok && exportData(r.state).version).toBe(3)
   })
 
   it('are still checked in full', () => {
@@ -587,7 +606,7 @@ describe('settings.showWeekSummary', () => {
   it('round-trips, and is left out of the export when not set', () => {
     expect(importData(JSON.parse(JSON.stringify(exportData(on))))).toEqual({ ok: true, state: on })
     expect('showWeekSummary' in exportData(state).settings).toBe(false)
-    expect(exportData(on).version).toBe(2)
+    expect(exportData(on).version).toBe(3)
   })
 
   it('keeps false as false, and reads a file without it as off', () => {

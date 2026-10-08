@@ -97,35 +97,40 @@
     "role": "Role",
     "link": "Link",
     "notes": "Notes",
-    "companyRequired": "Enter a company name.",
+    "companyOrLinkRequired": "Enter a link or a company name.",
     "linkInvalid": "Enter a link that starts with http:// or https://."
   },
   "quickAdd": {
     "title": "Add a job",
-    "add": "Add",
-    "added": "Added: {company}",
+    "saveToApply": "Save to “To apply”",
+    "saveApplied": "Save as already applied",
+    "moreToggle": "+ Company, role and note",
+    "addedToApply": "Saved to To apply: {company}",
+    "addedApplied": "Saved as applied: {company}",
+    "duplicate": "This link is already in your list: {name} ({status}).",
+    "addAnyway": "Add anyway",
     "linkLabel": "Link to the job ad",
-    "linkHelp": "Optional. With a link you can open the ad from the list.",
+    "linkHelp": "Enough to save the job. Nothing is fetched from the page; add the company yourself if you like.",
     "cvLabel": "CV you send",
-    "cvHelp": "Used when you mark the job as applied. That way you can see later which CV you used.",
-    "noCv": "No CV yet"
+    "cvHelp": "Used when you save a job as applied, or mark it as applied later.",
+    "noCv": "No CV"
   },
   "paste": {
     "summary": "+ Add several links at once",
     "label": "One link or job title per line",
-    "hint": "Up to 200 lines. Blank lines are ignored.",
+    "hint": "Up to 200 lines. Blank lines are ignored. Everything goes to To apply.",
     "add": "Add all",
     "empty": "Paste at least one line first.",
-    "result": "Added: {added}. Skipped lines: {skipped}."
+    "result": "Added: {added}. Already in the list: {duplicates}. Skipped lines: {skipped}."
   },
   "cv": {
-    "choose": "Choose a CV",
     "addOption": "Add a CV",
     "nameLabel": "CV name",
     "save": "Save CV",
     "saveAndApply": "Save and mark as applied",
     "firstPrompt": "Which CV are you using? Give it a name. Next time you can pick it from a list.",
-    "required": "Choose a CV first.",
+    "required": "Choose the CV you sent.",
+    "requiredNone": "Add a CV first, so you can see later what you sent.",
     "nameRequired": "Enter a name for the CV.",
     "nameTaken": "You already have a CV with that name."
   },
@@ -178,6 +183,7 @@
     "markApplied": "Mark as applied",
     "appliedWhen": "Applied {when}",
     "cvName": "CV: {name}",
+    "addedOn": "Added {date}",
     "linkOpens": "{host} (opens in a new tab)",
     "more": "More",
     "closedWithReason": "Closed: {reason}",
@@ -270,6 +276,7 @@
     "wrong_type": "{path}: expected {expected}, but found {actual}.",
     "invalid_value": "{path}: this value isn't allowed. Allowed values: {allowed}.",
     "empty_value": "{path}: this value can't be empty.",
+    "company_or_link_required": "{path}: enter at least a link or a company name.",
     "invalid_date": "{path}: this isn't a valid date.",
     "invalid_url": "{path}: this isn't a link starting with http:// or https://.",
     "duplicate_id": "{path}: the id “{id}” is used more than once.",
@@ -330,7 +337,7 @@
     },
     "step2": {
       "title": "Add a job you want to apply for",
-      "body": "Fill in the company, and paste the link to the ad if you like."
+      "body": "Paste the link to the ad. You can add the company and role if you like."
     },
     "step3": {
       "title": "Mark it when you've applied",

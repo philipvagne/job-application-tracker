@@ -31,6 +31,7 @@ export type ImportErrorCode =
   | 'wrong_type'
   | 'invalid_value'
   | 'empty_value'
+  | 'company_or_link_required'
   | 'invalid_date'
   | 'invalid_url'
   | 'duplicate_id'
@@ -261,12 +262,12 @@ function validateApplications(
       else if (seen.has(id)) errors.push(error('duplicate_id', `${path}.id`, { id }))
       else seen.add(id)
     }
-    const company = text('company').trim()
-    if (typeof item['company'] === 'string' && company === '') {
-      errors.push(error('empty_value', `${path}.company`))
-    }
+    const company = text('company').trim() // May be empty if there is a link.
     const role = text('role') // May be empty.
-    const url = text('url').trim() // May be empty; otherwise it must be an http(s) link.
+    const url = text('url').trim() // May be empty if there is a company; otherwise an http(s) link.
+    if (typeof item['company'] === 'string' && typeof item['url'] === 'string' && company === '' && url === '') {
+      errors.push(error('company_or_link_required', path))
+    }
     if (typeof item['url'] === 'string' && url !== '' && !isHttpUrl(url)) {
       errors.push(error('invalid_url', `${path}.url`))
     }
