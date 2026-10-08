@@ -107,3 +107,26 @@ export function markApplicationApplied(
   if (cvId === null) return { ok: true, value: next }
   return { ok: true, value: { ...next, settings: { ...next.settings, lastCvId: cvId } } }
 }
+
+/**
+ * Deletes a CV entry. Every application that used it loses its cvId (it keeps everything
+ * else), and the remembered last used CV is cleared if it was this one. Unchanged state if
+ * the id is unknown. The stored file is the caller's business: see deleteCvAndFile.
+ */
+export function deleteCv(state: AppState, cvId: string): Result<AppState, 'unknown_cv'> {
+  if (!state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
+  const applications = state.applications.map((a) => {
+    if (a.cvId !== cvId) return a
+    const { cvId: _removed, ...rest } = a
+    return rest
+  })
+  const { lastCvId, ...otherSettings } = state.settings
+  return {
+    ok: true,
+    value: {
+      applications,
+      cvs: state.cvs.filter((cv) => cv.id !== cvId),
+      settings: lastCvId === cvId ? otherSettings : state.settings,
+    },
+  }
+}

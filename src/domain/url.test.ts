@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hostOf, isHttpUrl } from './url'
+import { hostOf, isHttpUrl, openableLink } from './url'
 
 describe('isHttpUrl', () => {
   it.each([
@@ -55,5 +55,29 @@ describe('hostOf', () => {
     expect(hostOf('javascript:alert(1)')).toBeNull()
     expect(hostOf('example.com')).toBeNull()
     expect(hostOf('')).toBeNull()
+  })
+})
+
+describe('openableLink', () => {
+  it('returns the trimmed text for http and https links', () => {
+    expect(openableLink('  https://example.com/jobs/1?x=1  ')).toBe('https://example.com/jobs/1?x=1')
+    expect(openableLink('http://example.com')).toBe('http://example.com')
+  })
+
+  it.each([
+    '',
+    '   ',
+    'example.com',
+    'javascript:alert(1)',
+    ' JaVaScRiPt:alert(1)',
+    'data:text/html,hi',
+    'vbscript:x',
+    'file:///etc/passwd',
+    'ftp://example.com',
+    'blob:https://example.com/x',
+    'https://example.com/a b',
+    `https://example.com/${'a'.repeat(3000)}`,
+  ])('returns null for %j', (text) => {
+    expect(openableLink(text)).toBeNull()
   })
 })

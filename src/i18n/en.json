@@ -180,7 +180,11 @@
     "appliedWhen": "Applied {when}",
     "cvName": "CV: {name}",
     "addedOn": "Added {date}",
-    "linkOpens": "{host} (opens in a new tab)",
+    "applicationLink": "Application",
+    "applicationLinkOpens": "Application: {name} (opens in a new tab)",
+    "companyMissing": "Company missing",
+    "roleMissing": "Role missing",
+    "addCompany": "Add company",
     "more": "More",
     "closedWithReason": "Closed: {reason}",
     "notePrefix": "Note:"
@@ -201,7 +205,9 @@
     "reopened": "Reopened: {company}",
     "saved": "Saved: {company}",
     "deleted": "Deleted: {company}",
-    "cvAdded": "CV added: {name}"
+    "cvAdded": "CV added: {name}",
+    "cvDeleted": "CV deleted: {name}",
+    "cvDeletedLeft": "CV deleted: {name}. Applications now without a CV: {count}"
   },
   "editApp": {
     "title": "Edit application",
@@ -220,6 +226,20 @@
       "title": "Delete this application?",
       "body": "{company} will be removed from your list. This can't be undone.",
       "button": "Delete application"
+    }
+  },
+  "confirmCv": {
+    "title": "Delete this CV?",
+    "bodyNone": "{name} isn't used in any application.",
+    "bodyOne": "{name} is used in {count} application. That application is kept but left without a CV.",
+    "bodyOther": "{name} is used in {count} applications. They are kept but left without a CV.",
+    "fileNote": "The PDF file is also removed from this browser. This can't be undone.",
+    "noFileNote": "This can't be undone.",
+    "button": "Delete CV",
+    "error": {
+      "blocked": "The file is in use by another tab of this app. Close the other tab and try again. Nothing was deleted.",
+      "save_failed": "The file was removed but the change couldn't be saved, so the CV is still in the list. Download a backup of your data and try again.",
+      "unknown": "Something went wrong when removing the file. Nothing was deleted."
     }
   },
   "typeNames": {
@@ -316,6 +336,8 @@
     "usedOne": "used in {count} application",
     "usedOther": "used in {count} applications",
     "openFor": "Open CV: {name}",
+    "delete": "Delete",
+    "deleteFor": "Delete CV: {name}",
     "fileMissing": "The file is missing from this browser. Add it again as a new CV."
   },
   "side": {

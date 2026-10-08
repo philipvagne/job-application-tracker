@@ -1,5 +1,5 @@
 import { useEffect, useRef, type FocusEvent, type KeyboardEvent } from 'react'
-import { applicationTitle, type Application } from '../domain'
+import { accessibleTitle, type Application } from '../domain'
 import type { TextKey } from '../i18n'
 import { useApp } from '../state/AppContext'
 
@@ -76,7 +76,7 @@ export function RowMenu({ application, onAction }: RowMenuProps) {
     }
   }
 
-  const company = applicationTitle(application)
+  const company = accessibleTitle(application)
 
   return (
     <details ref={detailsRef} className="menu" onKeyDown={onKeyDown} onBlur={onBlur}>

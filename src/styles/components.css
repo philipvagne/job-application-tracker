@@ -641,6 +641,13 @@
   font-weight: 300;
 }
 
+/* "Company missing": quieter than a real company name, but still readable. */
+.row__title .row__missing {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
 .row__meta {
   display: flex;
   flex-wrap: wrap;
@@ -668,10 +675,36 @@
   gap: var(--space-2);
 }
 
+/* Not underlined: the arrow is the cue that this is a link that opens a new tab. */
 .row__link {
   display: inline-flex;
   align-items: center;
+  gap: 0.2em;
   color: var(--accent);
+  text-decoration: none;
+}
+
+.row__link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.row__link-mark {
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
+/* The small text action next to "Company missing": quiet, with a gap before it. */
+.row__add-company {
+  margin-inline-start: var(--space-4);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.row__add-company:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .row__actions {
@@ -790,6 +823,13 @@
   margin: 0;
   color: var(--muted);
   font-size: var(--text-sm);
+}
+
+.cvlist__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin-top: var(--space-1);
 }
 
 .cvlist__warn {

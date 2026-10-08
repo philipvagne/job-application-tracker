@@ -9,12 +9,14 @@ interface CvPanelProps {
   applications: readonly Application[]
   onAdd: () => void
   onOpenCv: (cv: Cv) => void
+  /** Asks to delete a CV. The tracker shows the confirmation. */
+  onDelete: (cv: Cv) => void
   /** The inline form for a new CV, when it is open. */
   form: ReactNode
 }
 
-/** The "My CVs" card: a read-only list with a button to add one. No edit or delete. */
-export function CvPanel({ cvs, applications, onAdd, onOpenCv, form }: CvPanelProps) {
+/** The "My CVs" card: a list with a button to add one, and open and delete per CV. No editing. */
+export function CvPanel({ cvs, applications, onAdd, onOpenCv, onDelete, form }: CvPanelProps) {
   const { t, language, fileStatus } = useApp()
   const plural = new Intl.PluralRules(language)
 
@@ -48,16 +50,26 @@ export function CvPanel({ cvs, applications, onAdd, onOpenCv, form }: CvPanelPro
                     {t('cvPanel.fileMissing')}
                   </p>
                 )}
-                {(status === 'available' || status === 'unknown') && (
+                <div className="cvlist__actions">
+                  {(status === 'available' || status === 'unknown') && (
+                    <button
+                      type="button"
+                      className="btn btn--text"
+                      aria-label={t('cvPanel.openFor', { name: cv.name })}
+                      onClick={() => onOpenCv(cv)}
+                    >
+                      {t('cvPanel.open')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn btn--text"
-                    aria-label={t('cvPanel.openFor', { name: cv.name })}
-                    onClick={() => onOpenCv(cv)}
+                    aria-label={t('cvPanel.deleteFor', { name: cv.name })}
+                    onClick={() => onDelete(cv)}
                   >
-                    {t('cvPanel.open')}
+                    {t('cvPanel.delete')}
                   </button>
-                )}
+                </div>
               </li>
             )
           })}

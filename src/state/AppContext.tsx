@@ -28,9 +28,11 @@ import {
   CORRUPT_BACKUP_KEY,
   STATE_KEY,
   buildExportFile,
+  deleteCvAndFile,
   readCvFile,
   uploadCv,
   type CvFileStore,
+  type DeleteCvErrorCode,
   type PickedFile,
   type ReadCvError,
   type SaveErrorCode,
@@ -97,6 +99,11 @@ export interface AppContextValue {
     addCv(name: string): Result<{ id: string; name: string }, CvError>
     /** Stores a PDF and adds a CV entry for it. Nothing is kept if any step fails. */
     uploadCv(file: PickedFile, name: string): Promise<Result<Cv, UploadErrorCode>>
+    /**
+     * Deletes a CV and its file. Applications that used it lose their CV; `affected` is how many.
+     * If the file cannot be removed nothing changes.
+     */
+    deleteCv(cvId: string): Promise<Result<{ affected: number }, DeleteCvErrorCode>>
     /** Opens a CV's PDF in a new tab. */
     openCv(cvId: string): Promise<'ok' | ReadCvError>
     /** Links an application to a CV entry, or removes the link with null. */
@@ -349,6 +356,29 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
             },
           },
           { file, name },
+        )
+        await refreshStoredFiles()
+        return result
+      },
+
+      async deleteCv(cvId) {
+        const result = await deleteCvAndFile(
+          {
+            files,
+            getState: () => stateRef.current,
+            removeEntry: (id) => {
+              const before = stateRef.current
+              const saved = commit({ type: 'deleteCv', id })
+              if (stateRef.current === before) return false
+              if (!saved) {
+                // Not saved: keep the entry, so the screen matches what is on disk.
+                showState(before)
+                return false
+              }
+              return true
+            },
+          },
+          cvId,
         )
         await refreshStoredFiles()
         return result

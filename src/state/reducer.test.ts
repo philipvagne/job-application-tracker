@@ -99,6 +99,14 @@ describe('reducer', () => {
     expect(reducer(before, { type: 'linkCv', applicationId: 'a1', cvId: 'nope' })).toBe(before)
   })
 
+  it('deleteCv removes the CV and its links, and ignores an unknown id', () => {
+    const before = stateWithData()
+    const after = reducer(before, { type: 'deleteCv', id: 'cv1' })
+    expect(after.cvs).toEqual([])
+    expect('cvId' in (after.applications[0] ?? {})).toBe(false)
+    expect(reducer(before, { type: 'deleteCv', id: 'nope' })).toBe(before)
+  })
+
   it('reset removes the data and keeps the language', () => {
     const after = reducer(stateWithData(), { type: 'reset' })
     expect(after.applications).toEqual([])

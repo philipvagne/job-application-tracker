@@ -49,7 +49,9 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
 
   const companyInvalid = errors.includes('company_or_link_required')
   const linkInvalid = errors.includes('invalid_url')
+  // A CV deleted while this dialog is open (in another tab) no longer counts as chosen.
   const chosenCv = state.cvs.find((cv) => cv.id === cvId)
+  const chosenCvId = chosenCv === undefined ? '' : chosenCv.id
   const chosenStatus = chosenCv === undefined ? null : fileStatus(chosenCv)
   const cvStatusText =
     chosenCv === undefined
@@ -68,7 +70,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
       document.getElementById(result.error.includes('company_or_link_required') ? companyId : linkId)?.focus()
       return
     }
-    if (cvId !== (application.cvId ?? '')) actions.linkCv(application.id, cvId === '' ? null : cvId)
+    if (chosenCvId !== (application.cvId ?? '')) actions.linkCv(application.id, chosenCvId === '' ? null : chosenCvId)
     onSaved(applicationTitle(result.value))
     onClose()
   }
@@ -128,7 +130,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
         <select
           id={cvSelectId}
           className="input input--select"
-          value={cvId}
+          value={chosenCvId}
           onChange={(e) => setCvId(e.target.value)}
           aria-describedby={cvStatusText === '' ? undefined : cvStatusId}
         >

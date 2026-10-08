@@ -1,11 +1,10 @@
 import {
-  applicationTitle,
+  accessibleTitle,
   daysSince,
   notePreview,
-  hostOf,
-  isHttpUrl,
-  linkHint,
+  openableLink,
   replyIndicator,
+  titleParts,
   type Application,
   type Cv,
   type ReplyIndicator as ReplyKind,
@@ -13,15 +12,35 @@ import {
 import { useApp } from '../state/AppContext'
 import { RowMenu, type MenuAction } from './RowMenu'
 
-/** Without a company the title is the website name, so a path hint (when there is no role) helps tell rows apart. */
-function RowTitle({ application }: { application: Application }) {
-  const fromLink = application.company.trim() === ''
-  const hint = fromLink && application.role === '' ? linkHint(application.url) : null
+/**
+ * The visible title: the company, or a muted "Company missing" with a button to fill it in.
+ * The stored role follows; with neither company nor role a muted "Role missing" does. The
+ * website name and the link's path hint are never shown, only read out in accessible names.
+ */
+function RowTitle({ application, onAddCompany }: { application: Application; onAddCompany: () => void }) {
+  const { t } = useApp()
+  const { company } = titleParts(application)
   return (
     <p className="row__title">
-      <strong>{applicationTitle(application)}</strong>
+      {company !== null ? (
+        <strong>{company}</strong>
+      ) : (
+        <strong className="row__missing">{t('row.companyMissing')}</strong>
+      )}
       {application.role !== '' && <span className="row__role"> · {application.role}</span>}
-      {hint !== null && <span className="row__role"> · {hint}</span>}
+      {company === null && application.role === '' && (
+        <span className="row__missing"> · {t('row.roleMissing')}</span>
+      )}
+      {company === null && (
+        <button
+          type="button"
+          className="btn btn--text row__add-company"
+          aria-label={t('row.actionFor', { action: t('row.addCompany'), company: accessibleTitle(application) })}
+          onClick={onAddCompany}
+        >
+          {t('row.addCompany')}
+        </button>
+      )}
     </p>
   )
 }
@@ -35,20 +54,23 @@ function AddedOn({ application }: { application: Application }) {
   return <span>{t('row.addedOn', { date })}</span>
 }
 
-/** The link as its host only. Only http(s) links are ever used as an href. */
-function HostLink({ url }: { url: string }) {
+/** "Application": the saved link, in a new tab. Only an http(s) link is ever used as an href. */
+function ApplicationLink({ application }: { application: Application }) {
   const { t } = useApp()
-  const host = hostOf(url)
-  if (host === null || !isHttpUrl(url)) return null
+  const href = openableLink(application.url)
+  if (href === null) return null
   return (
     <a
       className="row__link"
-      href={url.trim()}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={t('row.linkOpens', { host })}
+      aria-label={t('row.applicationLinkOpens', { name: accessibleTitle(application) })}
     >
-      {host}
+      {t('row.applicationLink')}
+      <span className="row__link-mark" aria-hidden="true">
+        ↗
+      </span>
     </a>
   )
 }
@@ -90,7 +112,7 @@ function NotePreview({ application, onShowNote }: { application: Application } &
           <button
             type="button"
             className="btn btn--text"
-            aria-label={t('row.actionFor', { action: t('note.showFull'), company: applicationTitle(application) })}
+            aria-label={t('row.actionFor', { action: t('note.showFull'), company: accessibleTitle(application) })}
             onClick={() => onShowNote(application)}
           >
             {t('note.showAll')}
@@ -112,7 +134,7 @@ function OpenCvButton({ application, cvs, onOpenCv }: CvProps) {
     <button
       type="button"
       className="btn btn--small"
-      aria-label={t('row.actionFor', { action: t('cvFile.open'), company: applicationTitle(application) })}
+      aria-label={t('row.actionFor', { action: t('cvFile.open'), company: accessibleTitle(application) })}
       onClick={() => onOpenCv(cv)}
     >
       {t('cvFile.open')}
@@ -146,9 +168,9 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onSh
   return (
     <li className="row">
       <div className="row__main">
-        <RowTitle application={application} />
+        <RowTitle application={application} onAddCompany={() => onMenu('edit')} />
         <p className="row__meta">
-          {application.url !== '' && <HostLink url={application.url} />}
+          <ApplicationLink application={application} />
           <CvName application={application} cvs={cvs} />
           <AddedOn application={application} />
         </p>
@@ -160,7 +182,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onSh
           type="button"
           id={`apply-${application.id}`}
           className="btn btn--primary"
-          aria-label={t('row.actionFor', { action: t('row.markApplied'), company: applicationTitle(application) })}
+          aria-label={t('row.actionFor', { action: t('row.markApplied'), company: accessibleTitle(application) })}
           onClick={onApplied}
         >
           {t('row.markApplied')}
@@ -192,13 +214,13 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
   return (
     <li className="row">
       <div className="row__main">
-        <RowTitle application={application} />
+        <RowTitle application={application} onAddCompany={() => onMenu('edit')} />
         <p className="row__meta">
           <span className="row__status">
             <span className="dot dot--status" aria-hidden="true" />
             <span>{statusLine}</span>
           </span>
-          {application.url !== '' && <HostLink url={application.url} />}
+          <ApplicationLink application={application} />
           <CvName application={application} cvs={cvs} />
         </p>
         <NotePreview application={application} onShowNote={onShowNote} />
@@ -219,7 +241,7 @@ interface ClosedRowProps extends CvProps, NoteProps {
 
 export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShowNote }: ClosedRowProps) {
   const { t } = useApp()
-  const company = applicationTitle(application)
+  const company = accessibleTitle(application)
   const reason = application.closedReason === undefined ? null : t(`closedReason.${application.closedReason}`)
   const buttons: { label: string; onClick: () => void }[] = [
     { label: t('menu.reopen'), onClick: onReopen },
@@ -229,7 +251,7 @@ export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShow
   return (
     <li className="row">
       <div className="row__main">
-        <RowTitle application={application} />
+        <RowTitle application={application} onAddCompany={() => onMenu('edit')} />
         <p className="row__meta">
           {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
           <CvName application={application} cvs={cvs} />

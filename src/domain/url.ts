@@ -24,3 +24,11 @@ export function hostOf(text: string): string | null {
   if (url === null) return null
   return url.hostname.replace(/^www\./i, '')
 }
+
+/**
+ * The link to use as an href: the trimmed text if it is an http or https link, else null.
+ * Rows only ever make links from this, so javascript:, data: and other schemes never become one.
+ */
+export function openableLink(text: string): string | null {
+  return parseHttpUrl(text) === null ? null : text.trim()
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { exportData, importData, type ImportError } from './exportImport'
+import { deleteCv } from './collection'
 import type { AppState, Application } from './types'
 
 const state: AppState = {
@@ -101,6 +102,13 @@ describe('round trip', () => {
     const { cvId: _removed, ...noCv } = state.applications[0] as Application
     const withoutCv: AppState = { ...state, applications: [noCv] }
     expect(importData(JSON.parse(JSON.stringify(exportData(withoutCv))))).toEqual({ ok: true, state: withoutCv })
+  })
+
+  it('round-trips a state after a CV and its last-used mark were deleted', () => {
+    const before: AppState = { ...state, settings: { ...state.settings, lastCvId: 'cv1' } }
+    const after = deleteCv(before, 'cv1')
+    if (!after.ok) throw new Error('setup failed')
+    expect(importData(JSON.parse(JSON.stringify(exportData(after.value))))).toEqual({ ok: true, state: after.value })
   })
 
   it('round-trips an empty state', () => {

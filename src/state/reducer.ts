@@ -3,6 +3,7 @@ import {
   addApplications,
   addCv,
   deleteApplication,
+  deleteCv,
   linkCv,
   markApplicationApplied,
   markExported,
@@ -29,6 +30,7 @@ export type Action =
   | { type: 'replaceApplication'; application: Application }
   | { type: 'deleteApplication'; id: string }
   | { type: 'addCv'; id: string; name: string; file?: CvFile; now?: IsoDate }
+  | { type: 'deleteCv'; id: string }
   | { type: 'linkCv'; applicationId: string; cvId: string | null }
   | { type: 'markApplied'; id: string; cvId: string | null; now: IsoDate }
   | { type: 'reset' }
@@ -61,6 +63,10 @@ export function reducer(state: AppState, action: Action): AppState {
       return deleteApplication(state, action.id)
     case 'addCv': {
       const result = addCv(state, { id: action.id, name: action.name, file: action.file, now: action.now })
+      return result.ok ? result.value : state
+    }
+    case 'deleteCv': {
+      const result = deleteCv(state, action.id)
       return result.ok ? result.value : state
     }
     case 'linkCv': {

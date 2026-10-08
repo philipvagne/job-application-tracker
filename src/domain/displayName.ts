@@ -5,14 +5,44 @@ const MAX_HINT_LENGTH = 60
 const MAX_ID_HINT_LENGTH = 20
 
 /**
- * What a row is called: the company, else the website name from the link (no "www."), else the
- * link as written. Never fetches anything; the link is only read as text.
+ * The parts of a row's visible title. `company` is null when there is none (the row then says
+ * the company is missing); `host` is the website name from the link (no "www."), or null when
+ * there is no usable http(s) link. Never fetches anything; the link is only read as text.
  */
-export function applicationTitle(application: Pick<Application, 'company' | 'url'>): string {
+export function titleParts(application: Pick<Application, 'company' | 'url'>): {
+  company: string | null
+  host: string | null
+} {
   const company = application.company.trim()
-  if (company !== '') return company
-  const url = application.url.trim()
-  return hostOf(url) ?? url
+  return { company: company === '' ? null : company, host: hostOf(application.url.trim()) }
+}
+
+/**
+ * What a row is called in button names, messages and dialogs, not in its visible title: the
+ * company; else the website name from the link followed by the role, if there is one, so rows
+ * from the same site can be told apart ("arbetsformedlingen.se · Frontendutvecklare"); else the
+ * link as written.
+ */
+export function applicationTitle(application: Pick<Application, 'company' | 'url'> & { role?: string }): string {
+  const { company, host } = titleParts(application)
+  if (company !== null) return company
+  const name = host ?? application.url.trim()
+  const role = application.role?.trim() ?? ''
+  return role === '' ? name : `${name} · ${role}`
+}
+
+/**
+ * The name of a row for screen readers (button and link names, announcements). Like
+ * `applicationTitle`, but a row with no company and no role also gets the hint from the link's
+ * path, which is never shown as visible text.
+ */
+export function accessibleTitle(application: Pick<Application, 'company' | 'url'> & { role?: string }): string {
+  const { company, host } = titleParts(application)
+  const role = application.role?.trim() ?? ''
+  if (company !== null || role !== '') return applicationTitle(application)
+  const hint = linkHint(application.url)
+  const name = host ?? application.url.trim()
+  return hint === null ? name : `${name} · ${hint}`
 }
 
 function decode(segment: string): string {

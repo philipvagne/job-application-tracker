@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applicationTitle, linkHint } from './displayName'
+import { accessibleTitle, applicationTitle, linkHint, titleParts } from './displayName'
 
 describe('applicationTitle', () => {
   it('is the company when there is one', () => {
@@ -17,6 +17,31 @@ describe('applicationTitle', () => {
 
   it('keeps markup as plain text', () => {
     expect(applicationTitle({ company: '<b>x</b>', url: '' })).toBe('<b>x</b>')
+  })
+
+  it('adds the role after the website name when the company is missing, to tell rows apart', () => {
+    expect(applicationTitle({ company: '', role: ' Frontendutvecklare ', url: 'https://www.arbetsformedlingen.se/1' })).toBe(
+      'arbetsformedlingen.se · Frontendutvecklare',
+    )
+    expect(applicationTitle({ company: '', role: '', url: 'https://www.arbetsformedlingen.se/1' })).toBe('arbetsformedlingen.se')
+    expect(applicationTitle({ company: 'Acme', role: 'Dev', url: 'https://a.se' })).toBe('Acme')
+  })
+})
+
+describe('titleParts', () => {
+  it('gives the company, trimmed, and no host needed', () => {
+    expect(titleParts({ company: ' Acme AB ', url: 'https://www.a.se/x' })).toEqual({ company: 'Acme AB', host: 'a.se' })
+  })
+
+  it('has no company for empty or blank text, and the host without www', () => {
+    expect(titleParts({ company: '', url: 'https://www.jobs.example.se/a?x=1' })).toEqual({ company: null, host: 'jobs.example.se' })
+    expect(titleParts({ company: '   ', url: 'http://careers.acme.com' })).toEqual({ company: null, host: 'careers.acme.com' })
+  })
+
+  it('has no host when the link is missing or not http(s)', () => {
+    expect(titleParts({ company: 'Acme', url: '' })).toEqual({ company: 'Acme', host: null })
+    expect(titleParts({ company: '', url: 'javascript:alert(1)' })).toEqual({ company: null, host: null })
+    expect(titleParts({ company: '', url: 'not a link' })).toEqual({ company: null, host: null })
   })
 })
 
@@ -65,5 +90,22 @@ describe('linkHint', () => {
 
   it('returns markup as plain text', () => {
     expect(linkHint('https://acme.se/jobs/%3Cimg%20src%3Dx%3E-dev')).toBe('<img src=x> dev')
+  })
+})
+
+describe('accessibleTitle', () => {
+  it('is the same as applicationTitle when there is a company or a role', () => {
+    expect(accessibleTitle({ company: 'Acme', role: '', url: 'https://a.se/jobs/dev' })).toBe('Acme')
+    expect(accessibleTitle({ company: '', role: 'Dev', url: 'https://www.a.se/jobs/other' })).toBe('a.se · Dev')
+  })
+
+  it('adds the path hint when there is no company and no role', () => {
+    expect(accessibleTitle({ company: '', role: '', url: 'https://www.a.se/jobs/frontend-developer' })).toBe(
+      'a.se · frontend developer',
+    )
+  })
+
+  it('is just the website name when the link has no hint', () => {
+    expect(accessibleTitle({ company: '', role: '', url: 'https://www.a.se/' })).toBe('a.se')
   })
 })

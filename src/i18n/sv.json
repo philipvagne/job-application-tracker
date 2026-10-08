@@ -180,7 +180,11 @@
     "appliedWhen": "Sökt {when}",
     "cvName": "CV: {name}",
     "addedOn": "Tillagd {date}",
-    "linkOpens": "{host} (öppnas i en ny flik)",
+    "applicationLink": "Ansökan",
+    "applicationLinkOpens": "Ansökan: {name} (öppnas i ny flik)",
+    "companyMissing": "Företag saknas",
+    "roleMissing": "Roll saknas",
+    "addCompany": "Lägg till företag",
     "more": "Mer",
     "closedWithReason": "Avslutad: {reason}",
     "notePrefix": "Anteckning:"
@@ -201,7 +205,9 @@
     "reopened": "Öppnad igen: {company}",
     "saved": "Sparad: {company}",
     "deleted": "Borttagen: {company}",
-    "cvAdded": "CV tillagt: {name}"
+    "cvAdded": "CV tillagt: {name}",
+    "cvDeleted": "CV borttaget: {name}",
+    "cvDeletedLeft": "CV borttaget: {name}. Ansökningar utan CV nu: {count}"
   },
   "editApp": {
     "title": "Redigera ansökan",
@@ -220,6 +226,20 @@
       "title": "Ta bort den här ansökan?",
       "body": "{company} tas bort från din lista. Det går inte att ångra.",
       "button": "Ta bort ansökan"
+    }
+  },
+  "confirmCv": {
+    "title": "Ta bort det här CV:t?",
+    "bodyNone": "{name} används inte i någon ansökan.",
+    "bodyOne": "{name} används i {count} ansökan. Ansökan blir kvar men står utan CV.",
+    "bodyOther": "{name} används i {count} ansökningar. Ansökningarna blir kvar men står utan CV.",
+    "fileNote": "PDF-filen tas också bort från den här webbläsaren. Det går inte att ångra.",
+    "noFileNote": "Det går inte att ångra.",
+    "button": "Ta bort CV",
+    "error": {
+      "blocked": "Filen används av en annan flik i appen. Stäng den fliken och försök igen. Inget har tagits bort.",
+      "save_failed": "Filen togs bort men ändringen kunde inte sparas, så CV:t finns kvar i listan. Ladda ner en säkerhetskopia och försök igen.",
+      "unknown": "Något gick fel när filen skulle tas bort. Inget har tagits bort."
     }
   },
   "typeNames": {
@@ -316,6 +336,8 @@
     "usedOne": "används i {count} ansökan",
     "usedOther": "används i {count} ansökningar",
     "openFor": "Öppna CV: {name}",
+    "delete": "Ta bort",
+    "deleteFor": "Ta bort CV: {name}",
     "fileMissing": "Filen saknas i den här webbläsaren. Lägg till den igen som ett nytt CV."
   },
   "side": {

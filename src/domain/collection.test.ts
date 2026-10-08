@@ -4,6 +4,7 @@ import {
   addApplications,
   addCv,
   deleteApplication,
+  deleteCv,
   linkCv,
   markApplicationApplied,
   replaceApplication,
@@ -243,5 +244,55 @@ describe('addAppliedApplication', () => {
     const r = addAppliedApplication(before, noCv)
     expect(r.ok && r.value.applications.map((a) => a.id)).toEqual(['a1', 'a2', 'n1'])
     expect(r.ok && r.value.settings.lastCvId).toBe('cv2')
+  })
+})
+
+describe('deleteCv', () => {
+  const file = { fileName: 'a.pdf', size: 10, type: 'application/pdf' as const }
+  const base = (): AppState =>
+    state({
+      applications: [
+        app('a1', { cvId: 'cv1' }),
+        app('a2', { cvId: 'cv2' }),
+        app('a3', { status: 'applied', appliedAt: T1, cvId: 'cv1', repliedAt: T1, notes: 'n' }),
+        app('a4'),
+      ],
+      cvs: [
+        { id: 'cv1', name: 'Short', file },
+        { id: 'cv2', name: 'Long' },
+      ],
+      settings: { reminderDays: 14, language: 'en', lastCvId: 'cv1' },
+    })
+
+  it('removes the CV and its link from every application that used it, keeping the rest', () => {
+    const r = deleteCv(base(), 'cv1')
+    expect(r.ok && r.value.cvs).toEqual([{ id: 'cv2', name: 'Long' }])
+    const apps = r.ok ? r.value.applications : []
+    expect(apps.map((a) => a.cvId)).toEqual([undefined, 'cv2', undefined, undefined])
+    expect('cvId' in (apps[0] ?? {})).toBe(false)
+    expect(apps[2]).toEqual(app('a3', { status: 'applied', appliedAt: T1, repliedAt: T1, notes: 'n' }))
+  })
+
+  it('clears the last used CV only when it was this one', () => {
+    const first = deleteCv(base(), 'cv1')
+    expect(first.ok && 'lastCvId' in first.value.settings).toBe(false)
+    const other = deleteCv(base(), 'cv2')
+    expect(other.ok && other.value.settings.lastCvId).toBe('cv1')
+  })
+
+  it('deletes a name-only CV nobody uses', () => {
+    const r = deleteCv(state({ cvs: [{ id: 'cv1', name: 'Short' }, { id: 'cv2', name: 'Long' }] }), 'cv2')
+    expect(r.ok && r.value.cvs.map((c) => c.id)).toEqual(['cv1'])
+    expect(r.ok && r.value.applications).toEqual(state().applications)
+  })
+
+  it('refuses an unknown CV', () => {
+    expect(deleteCv(base(), 'zzz')).toEqual({ ok: false, error: 'unknown_cv' })
+  })
+
+  it('does not mutate the input', () => {
+    const before = base()
+    deleteCv(before, 'cv1')
+    expect(before).toEqual(base())
   })
 })

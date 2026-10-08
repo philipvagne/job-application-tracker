@@ -5,6 +5,7 @@ import {
   SELECTABLE_CLOSED_REASONS,
   applicationTitle,
   applicationsThisWeek,
+  applicationsUsingCv,
   applicationsWithStatus,
   countsByStatus,
   defaultTab,
@@ -74,6 +75,10 @@ export function Tracker() {
   const [editing, setEditing] = useState<Application | null>(null)
   const [viewingNote, setViewingNote] = useState<Application | null>(null)
   const [confirm, setConfirm] = useState<Confirm>(null)
+  // The CV the user is about to delete, and why the last try failed, if it did.
+  const [deletingCv, setDeletingCv] = useState<Cv | null>(null)
+  const [deleteCvError, setDeleteCvError] = useState<'blocked' | 'save_failed' | 'unknown' | null>(null)
+  const [deleteCvBusy, setDeleteCvBusy] = useState(false)
   const [closeReason, setCloseReason] = useState<ClosedReason>('no_reply')
   // DOM ids to try, in order, once the next render is done.
   const [focusIds, setFocusIds] = useState<string[]>([])
@@ -89,6 +94,7 @@ export function Tracker() {
   const counts = countsByStatus(applications)
   const shown = applicationsWithStatus(applications, tab)
   const firstVisit = applications.length === 0 && cvs.length === 0
+  const deletingCvCount = deletingCv === null ? 0 : applicationsUsingCv(applications, deletingCv.id)
   const weekCount = applicationsThisWeek(applications, now)
 
   // The CV in the picker: the one chosen (or "No CV"), else the last one used, if it still exists.
@@ -209,6 +215,37 @@ export function Tracker() {
     setCvFileError(null)
     setCvFile(null)
     setFocusIds([cvSelectId, CV_ADD_BUTTON_ID])
+  }
+
+  function askDeleteCv(cv: Cv): void {
+    setDeleteCvError(null)
+    setDeletingCv(cv)
+  }
+
+  function closeDeleteCv(): void {
+    setDeletingCv(null)
+    setDeleteCvError(null)
+  }
+
+  async function confirmDeleteCv(): Promise<void> {
+    if (deletingCv === null || deleteCvBusy) return
+    const cv = deletingCv
+    setDeleteCvBusy(true)
+    const result = await actions.deleteCv(cv.id)
+    setDeleteCvBusy(false)
+    // A CV that is already gone (another tab removed it) counts as done.
+    if (!result.ok && result.error !== 'unknown_cv') {
+      setDeleteCvError(result.error === 'blocked' || result.error === 'save_failed' ? result.error : 'unknown')
+      return
+    }
+    const affected = result.ok ? result.value.affected : 0
+    closeDeleteCv()
+    setMessage(
+      affected > 0
+        ? t('announce.cvDeletedLeft', { name: cv.name, count: affected })
+        : t('announce.cvDeleted', { name: cv.name }),
+    )
+    setFocusIds([CV_ADD_BUTTON_ID, cvSelectId])
   }
 
   async function onOpenCv(cv: Cv): Promise<void> {
@@ -411,6 +448,7 @@ export function Tracker() {
               applications={applications}
               onAdd={openCvForm}
               onOpenCv={(cv) => void onOpenCv(cv)}
+              onDelete={askDeleteCv}
               form={cvFormNode}
             />
             <SideNote />
@@ -425,6 +463,32 @@ export function Tracker() {
       />
 
       <NoteDialog application={viewingNote} onClose={() => setViewingNote(null)} />
+
+      <ConfirmDialog
+        open={deletingCv !== null}
+        title={t('confirmCv.title')}
+        body={
+          deletingCv === null
+            ? ''
+            : t(
+                deletingCvCount === 0
+                  ? 'confirmCv.bodyNone'
+                  : new Intl.PluralRules(language).select(deletingCvCount) === 'one'
+                    ? 'confirmCv.bodyOne'
+                    : 'confirmCv.bodyOther',
+                { name: deletingCv.name, count: deletingCvCount },
+              )
+        }
+        confirmLabel={t('confirmCv.button')}
+        danger
+        onConfirm={() => void confirmDeleteCv()}
+        onCancel={closeDeleteCv}
+      >
+        <p>{deletingCv?.file !== undefined ? t('confirmCv.fileNote') : t('confirmCv.noFileNote')}</p>
+        <p role="alert" className="error">
+          {deleteCvError === null ? '' : t(`confirmCv.error.${deleteCvError}`)}
+        </p>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={confirm !== null}
