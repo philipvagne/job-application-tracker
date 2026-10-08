@@ -1,5 +1,5 @@
 import { bookmarkVersionOfPayload, isOutdatedBookmarkVersion } from './bookmarkVersion'
-import { isHttpUrl } from './url'
+import { cleanJobLink, isHttpUrl } from './url'
 
 /** The only payload version this app reads. */
 export const ADD_PAYLOAD_VERSION = '1'
@@ -105,7 +105,7 @@ export function readAddHash(hash: string): AddHashResult {
   return {
     kind: 'prefill',
     prefill: {
-      link: trimmedLink,
+      link: cleanJobLink(trimmedLink),
       company: cleanAddText(company ?? ''),
       role: cleanAddText(role ?? ''),
       bookmarkVersion: sentBy,

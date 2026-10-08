@@ -79,3 +79,23 @@ describe('parsePastedList', () => {
     expect(parsePastedList('Östra Sjukhuset 🏥')).toEqual({ items: [], skipped: 1, duplicates: 0 })
   })
 })
+
+describe('parsePastedList and job links', () => {
+  const LONG = 'https://www.linkedin.com/jobs/search-results/?currentJobId=4469748142&eBP=x'
+  const SHORT = 'https://www.linkedin.com/jobs/view/4469748142'
+
+  it('counts the long and short forms of one LinkedIn job in a paste as one', () => {
+    const result = parsePastedList(`${LONG}\n${SHORT}\nhttps://se.linkedin.com/jobs/view/dev-at-x-4469748142/`)
+    expect(result.items).toHaveLength(1)
+    expect(result.duplicates).toBe(2)
+  })
+
+  it('counts a pasted link as a duplicate of a saved link in another form', () => {
+    expect(parsePastedList(SHORT, [{ url: LONG }])).toEqual({ items: [], skipped: 0, duplicates: 1 })
+    expect(parsePastedList(LONG, [{ url: SHORT }])).toEqual({ items: [], skipped: 0, duplicates: 1 })
+  })
+
+  it('leaves the pasted text as it is; the link is cleaned when the application is created', () => {
+    expect(parsePastedList(LONG).items).toEqual([{ url: LONG, company: '', role: '' }])
+  })
+})

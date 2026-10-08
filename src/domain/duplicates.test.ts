@@ -45,3 +45,37 @@ describe('findByLink', () => {
     expect(findByLink(list, 'javascript:alert(1)')).toBeNull()
   })
 })
+
+describe('the same job in its long and short forms', () => {
+  const LONG = 'https://www.linkedin.com/jobs/search-results/?currentJobId=4469748142&eBP=NOT_ELIGIBLE_FOR_CHARGING&refId=abc'
+  const SLUG = 'https://se.linkedin.com/jobs/view/android-developer-at-geoguessr-4469748142/?trackingId=x'
+  const SHORT = 'https://www.linkedin.com/jobs/view/4469748142'
+
+  it('gives all LinkedIn forms of one job the same key', () => {
+    expect(linkKey(LONG)).toBe(linkKey(SHORT))
+    expect(linkKey(SLUG)).toBe(linkKey(SHORT))
+    expect(linkKey(SHORT)).toBe('linkedin.com/jobs/view/4469748142')
+  })
+
+  it('keeps different LinkedIn jobs apart', () => {
+    expect(linkKey(SHORT)).not.toBe(linkKey('https://www.linkedin.com/jobs/view/4469748143'))
+  })
+
+  it('finds a saved long link when the short one is added, and the other way round', () => {
+    expect(findByLink([app('a', LONG)], SHORT)?.id).toBe('a')
+    expect(findByLink([app('a', SHORT)], LONG)?.id).toBe('a')
+    expect(findByLink([app('a', SLUG)], LONG)?.id).toBe('a')
+  })
+
+  it('gives all Platsbanken forms of one ad the same key', () => {
+    const ad = 'https://arbetsformedlingen.se/platsbanken/annonser/31572415'
+    expect(linkKey(`${ad}?q=v%C3%A5rd`)).toBe(linkKey(ad))
+    expect(linkKey('https://www.arbetsformedlingen.se/platsbanken/annonser/31572415/')).toBe(linkKey(ad))
+    expect(findByLink([app('a', ad)], `${ad}?q=1#x`)?.id).toBe('a')
+  })
+
+  it('does not change how other links are compared', () => {
+    expect(linkKey('https://acme.se/job?id=1')).not.toBe(linkKey('https://acme.se/job?id=2'))
+    expect(linkKey('https://www.linkedin.com/in/someone/')).toBe('linkedin.com/in/someone')
+  })
+})

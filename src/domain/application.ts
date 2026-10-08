@@ -1,5 +1,5 @@
 import type { Application, ClosedReason, IsoDate, Result, Status } from './types'
-import { isHttpUrl } from './url'
+import { cleanJobLink, isHttpUrl } from './url'
 
 export interface NewApplicationInput {
   id: string
@@ -39,13 +39,16 @@ export function validateApplicationFields(fields: {
   return errors
 }
 
-/** Builds a to_apply application without checking the fields; see newApplication. */
+/**
+ * Builds a to_apply application without checking the fields; see newApplication. A LinkedIn or
+ * Platsbanken job link is saved in its short public form (see cleanJobLink). Editing does not do this.
+ */
 export function createApplication(input: NewApplicationInput, now: IsoDate): Application {
   const application: Application = {
     id: input.id,
     company: input.company.trim(),
     role: input.role.trim(),
-    url: input.url.trim(),
+    url: cleanJobLink(input.url.trim()),
     status: 'to_apply',
     createdAt: now,
   }

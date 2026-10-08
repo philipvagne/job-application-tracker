@@ -491,3 +491,34 @@ describe('reopening to the stage it was closed from', () => {
     expect(changeStatus(closed, 'applied', T2)).toEqual({ ok: false, error: 'invalid_transition' })
   })
 })
+
+describe('job links when an application is created or edited', () => {
+  const LONG = 'https://www.linkedin.com/jobs/search-results/?currentJobId=4469748142&eBP=NOT_ELIGIBLE_FOR_CHARGING'
+  const SHORT = 'https://www.linkedin.com/jobs/view/4469748142'
+
+  it('saves a LinkedIn or Platsbanken link in its short form when the application is created', () => {
+    expect(createApplication({ id: 'a', company: '', role: '', url: ` ${LONG} ` }, T0).url).toBe(SHORT)
+    expect(createApplication({ id: 'a', company: '', role: '', url: 'https://www.arbetsformedlingen.se/platsbanken/annonser/31572415?q=x' }, T0).url).toBe(
+      'https://arbetsformedlingen.se/platsbanken/annonser/31572415',
+    )
+  })
+
+  it('does so for a new application and a new application that is already applied', () => {
+    const added = newApplication({ id: 'a', company: '', role: '', url: LONG }, T0)
+    expect(added).toEqual({ ok: true, value: expect.objectContaining({ url: SHORT, status: 'to_apply' }) })
+    const applied = newAppliedApplication({ id: 'b', company: '', role: '', url: LONG }, T0)
+    expect(applied).toEqual({ ok: true, value: expect.objectContaining({ url: SHORT, status: 'applied' }) })
+  })
+
+  it('leaves the link of any other site exactly as typed (trimmed)', () => {
+    expect(createApplication({ id: 'a', company: '', role: '', url: ' https://careers.example.com/jobs/42?ref=a&b=c#apply ' }, T0).url).toBe(
+      'https://careers.example.com/jobs/42?ref=a&b=c#apply',
+    )
+  })
+
+  it('does not touch the link when an application is edited', () => {
+    const saved = make({ url: LONG })
+    expect(updateApplication(saved, { role: 'Other' })).toEqual({ ok: true, value: expect.objectContaining({ url: LONG }) })
+    expect(updateApplication(saved, { url: ` ${LONG} ` })).toEqual({ ok: true, value: expect.objectContaining({ url: LONG }) })
+  })
+})

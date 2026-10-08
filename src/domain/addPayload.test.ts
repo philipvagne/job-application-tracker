@@ -253,3 +253,15 @@ describe('payloads from version 3 bookmarks', () => {
     })
   })
 })
+
+describe('job links in a payload', () => {
+  it('arrives as the short LinkedIn address', () => {
+    const long = 'https://www.linkedin.com/jobs/search-results/?currentJobId=4469748142&eBP=NOT_ELIGIBLE_FOR_CHARGING&refId=abc'
+    const result = readAddHash(hash({ u: long }, `#add=1&v=1&bv=${CURRENT_BOOKMARK_VERSION}`))
+    expect(result).toMatchObject({ kind: 'prefill', prefill: { link: 'https://www.linkedin.com/jobs/view/4469748142' } })
+  })
+
+  it('leaves the link of any other site as it came', () => {
+    expect(readAddHash(hash({ u: LINK }))).toMatchObject({ prefill: { link: LINK } })
+  })
+})
