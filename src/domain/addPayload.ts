@@ -46,12 +46,14 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Plain text for a company or role: entities decoded, control characters turned into spaces,
+ * Plain text for a company or role: entities decoded, then HTML tags (<br>, <b>) replaced by a
+ * space (a lone "<" as in "5 < 6" stays), control characters turned into spaces,
  * invisible formatting characters (zero-width, text-direction overrides) removed, whitespace
  * collapsed, trimmed and cut at MAX_ADD_TEXT_LENGTH characters.
  */
 export function cleanAddText(raw: string): string {
   const text = decodeEntities(raw)
+    .replace(/<\/?[a-z][^<>]*>/gi, ' ')
     .replace(/\p{Cc}/gu, ' ')
     .replace(/\p{Cf}/gu, '')
     .replace(/\s+/gu, ' ')

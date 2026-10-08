@@ -1199,3 +1199,33 @@
 .callout__text strong {
   font-weight: 600;
 }
+
+/* The bookmarklet dialog: a link styled as a button to drag, and a by-hand fallback. */
+.bookmarklet__steps {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.bookmarklet__steps li + li {
+  margin-top: var(--space-1);
+}
+
+.bookmarklet__link {
+  text-decoration: none;
+  cursor: grab;
+}
+
+.bookmarklet__heading {
+  margin-top: var(--space-4);
+  font-size: var(--text-base);
+}
+
+.bookmarklet__code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.bookmarklet__local {
+  margin: 0 0 var(--space-3);
+}

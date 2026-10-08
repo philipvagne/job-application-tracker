@@ -96,12 +96,17 @@ describe('readAddHash', () => {
     }
   })
 
-  it('treats markup as plain text', () => {
-    const result = readAddHash(hash({ u: LINK, jo: '<img src=x onerror=alert(1)>', jt: '<b>Dev</b>' }))
+  it('removes markup from company and role; what is left is plain text', () => {
+    const result = readAddHash(hash({ u: LINK, jo: '<img src=x onerror=alert(1)>Acme', jt: '<b>Dev</b>' }))
     expect(result).toEqual({
       kind: 'prefill',
-      prefill: { link: LINK, company: '<img src=x onerror=alert(1)>', role: '<b>Dev</b>' },
+      prefill: { link: LINK, company: 'Acme', role: 'Dev' },
     })
+  })
+
+  it('keeps a lone < as plain text', () => {
+    const result = readAddHash(hash({ u: LINK, jt: 'C <3 Dev' }))
+    expect(result).toMatchObject({ prefill: { role: 'C <3 Dev' } })
   })
 })
 
@@ -121,6 +126,18 @@ describe('cleanAddText', () => {
   it('decodes common entities once, as text', () => {
     expect(cleanAddText('R&amp;D &quot;Lead&quot; &#39;x&#39; &#x41; &nbsp;y')).toBe('R&D "Lead" \'x\' A y')
     expect(cleanAddText('&amp;lt;')).toBe('&lt;')
+  })
+
+  it('replaces HTML tags with a space, also ones that arrive as entities', () => {
+    expect(cleanAddText('Senior<br>Developer')).toBe('Senior Developer')
+    expect(cleanAddText('<b>Acme</b> AB')).toBe('Acme AB')
+    expect(cleanAddText('Lead&lt;br/&gt;Dev')).toBe('Lead Dev')
+    expect(cleanAddText('<p class="x">Hej</p>')).toBe('Hej')
+  })
+
+  it('leaves a lone < or > alone', () => {
+    expect(cleanAddText('5 < 6 and 7 > 3')).toBe('5 < 6 and 7 > 3')
+    expect(cleanAddText('a <3 b')).toBe('a <3 b')
   })
 
   it('leaves unknown or invalid entities as written', () => {

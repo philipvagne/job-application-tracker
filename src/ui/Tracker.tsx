@@ -35,6 +35,7 @@ import { NoteDialog } from './NoteDialog'
 import { LIST_SEARCH_ID, ListControls } from './ListControls'
 import { LINK_FIELD_ID, QuickAdd } from './QuickAdd'
 import type { MenuAction } from './RowMenu'
+import { BookmarkletDialog } from './BookmarkletDialog'
 import { SideNote } from './SideNote'
 import { StatusTabs, tabId } from './StatusTabs'
 import { Welcome } from './Welcome'
@@ -88,6 +89,7 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
   const [cvBusy, setCvBusy] = useState(false)
   const [editing, setEditing] = useState<Application | null>(null)
   const [viewingNote, setViewingNote] = useState<Application | null>(null)
+  const [bookmarkletOpen, setBookmarkletOpen] = useState(false)
   const [confirm, setConfirm] = useState<Confirm>(null)
   // The CV the user is about to delete, and why the last try failed, if it did.
   const [deletingCv, setDeletingCv] = useState<Cv | null>(null)
@@ -510,7 +512,7 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
               onDelete={askDeleteCv}
               form={cvFormNode}
             />
-            <SideNote />
+            <SideNote onOpenBookmarklet={() => setBookmarkletOpen(true)} />
           </div>
         </div>
       )}
@@ -522,6 +524,8 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
       />
 
       <NoteDialog application={viewingNote} onClose={() => setViewingNote(null)} />
+
+      <BookmarkletDialog open={bookmarkletOpen} onClose={() => setBookmarkletOpen(false)} />
 
       <ConfirmDialog
         open={deletingCv !== null}

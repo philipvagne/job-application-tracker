@@ -113,7 +113,7 @@
     "fromBookmarkletHost": "Länken går till",
     "fromBookmarkletInvalid": "Länken från bokmärket kunde inte läsas. Klistra in länken i stället.",
     "linkLabel": "Länk till jobbannonsen",
-    "linkHelp": "Räcker för att spara jobbet. Inget hämtas från sidan; företagsnamnet fyller du i själv om du vill.",
+    "linkHelp": "Räcker för att spara jobbet. Appen hämtar inget från sidan; företag och roll fyller du i själv, eller får med från bokmärket.",
     "cvLabel": "CV du skickar med",
     "cvHelp": "Följer med när du sparar som sökt, eller när du markerar jobbet som sökt senare.",
     "noCv": "Inget CV"
@@ -343,9 +343,29 @@
     "deleteFor": "Ta bort CV: {name}",
     "fileMissing": "Filen saknas i den här webbläsaren. Lägg till den igen som ett nytt CV."
   },
+  "bookmarklet": {
+    "title": "Lägg till från annonsen",
+    "intro": "Ett bokmärke skickar länken hit, och när sidan anger dem även jobbtitel och företag. Du kontrollerar och sparar själv.",
+    "unavailable": "Ett bokmärke kan bara skapas när appen öppnas från en webbadress (http eller https).",
+    "step1": "Visa bokmärkesfältet (Ctrl+Skift+B i Chrome, Edge och Firefox; i Safari: Visa ▸ Visa favoritfältet).",
+    "step2": "Dra knappen nedan till bokmärkesfältet.",
+    "step3": "Klicka på bokmärket när du står på en jobbannons.",
+    "linkLabel": "Lägg till i Jobbtracker",
+    "dragNotClick": "Dra knappen till bokmärkesfältet. Att klicka på den här gör ingenting.",
+    "byHandTitle": "Kan du inte dra?",
+    "byHand": "Skapa bokmärket för hand: lägg till ett nytt bokmärke (Ctrl+D), välj Redigera eller Mer och klistra in koden som adress eller URL. Det här är också sättet om du använder tangentbordet.",
+    "copy": "Kopiera bokmärkeskod",
+    "copied": "Koden är kopierad.",
+    "copyFailed": "Det gick inte att kopiera. Markera koden nedan och kopiera den själv.",
+    "codeLabel": "Bokmärkeskod",
+    "address": "Bokmärket öppnar: {address}",
+    "local": "Du ser den här sidan på din egen dator. Ett bokmärke som skapas här fungerar bara medan appen körs här. Skapa det från den riktiga adressen.",
+    "limits": "Vissa sidor blockerar bokmärken eller saknar uppgifter om jobbet. Då öppnas det med länken, eller inget alls. Klistra in länken som vanligt i stället. Ligger annonsen i en ruta inuti en annan sida kan fel länk följa med. Om appens adress ändras måste bokmärket göras om."
+  },
   "side": {
     "lastBackup": "Senaste säkerhetskopia: {date}",
-    "export": "Ladda ner"
+    "export": "Ladda ner",
+    "bookmarklet": "Lägg till från annonsen"
   },
   "welcome": {
     "title": "Ett anteckningsblock för dina jobbansökningar",

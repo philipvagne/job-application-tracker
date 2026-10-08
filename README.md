@@ -22,7 +22,19 @@ npm run preview    # serves dist/ with the same security headers as the live sit
 
 ## Prefilling a job from the address (for the bookmarklet, and for testing)
 
-Opening the app with `/#add=1&v=1&u=<link>&jo=<company>&jt=<role>` (values URL-encoded) fills the quick-add card; nothing is saved until you press save. Only `u` is required and must be an http(s) link; `v` must be `1`; `jo` and `jt` are cut at 200 characters; `dt` (page title) is accepted but not used yet. The fragment is removed from the address after it has been read.
+Opening the app with `/#add=1&v=1&u=<link>&jo=<company>&jt=<role>` (values URL-encoded) fills the quick-add card; nothing is saved until you press save. Only `u` is required and must be an http(s) link; `v` must be `1`; `jo` and `jt` are cut at 200 characters; `dt` (page title) is accepted but not used yet. HTML tags in `jo` and `jt` are removed and entities decoded once. The fragment is removed from the address after it has been read. The bookmarklet that sends this is described in the next section.
+
+## The bookmarklet
+
+The side column has "Add from a job ad". It shows a link to drag to the bookmarks bar, and a "copy bookmark code" button for making the bookmark by hand (the way if you use the keyboard). The bookmark is made for the address the app is opened from, so one made on `localhost` only works while the app runs there. The code is built in `src/domain/bookmarkletSource.ts`.
+
+**What it does.** Clicked on a job page, it opens this app in a new tab with the address described above. The card is filled in and you check it and save yourself.
+
+**What it reads.** The page address (without its `#` part), the `title` and the company of a `JobPosting` block in the page's structured data (`application/ld+json`), and the page title. It does not guess a job title or company from the page title or the page text.
+
+**What it never does.** No network requests, no changes to the page, no cookies or storage, no reading of the page text, and nothing is saved until you press save. On a page that is not http(s) it opens nothing. The new tab is opened without a link back to the page (`noopener,noreferrer`).
+
+**Known limits.** Some sites block bookmarklets with a strict content security policy, and some pages have no structured job data (then only the link comes along). If a job ad sits in a frame from another site, the bookmarklet sees the outer page. Very long text is cut. If the app address changes, the bookmark has to be made again.
 
 ## Deploy (Cloudflare Workers, static assets)
 

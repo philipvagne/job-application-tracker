@@ -113,7 +113,7 @@
     "fromBookmarkletHost": "The link goes to",
     "fromBookmarkletInvalid": "The link from the bookmarklet could not be read. Paste the link instead.",
     "linkLabel": "Link to the job ad",
-    "linkHelp": "Enough to save the job. Nothing is fetched from the page; add the company yourself if you like.",
+    "linkHelp": "Enough to save the job. The app fetches nothing from the page; add company and role yourself, or let the bookmarklet bring them.",
     "cvLabel": "CV you send",
     "cvHelp": "Used when you save a job as applied, or mark it as applied later.",
     "noCv": "No CV"
@@ -343,9 +343,29 @@
     "deleteFor": "Delete CV: {name}",
     "fileMissing": "The file is missing from this browser. Add it again as a new CV."
   },
+  "bookmarklet": {
+    "title": "Add from a job ad",
+    "intro": "A bookmarklet sends the link here, and the job title and company too when the page states them. You check and save yourself.",
+    "unavailable": "A bookmarklet can only be made when the app is opened from a web address (http or https).",
+    "step1": "Show the bookmarks bar (Ctrl+Shift+B in Chrome, Edge and Firefox; in Safari: View ▸ Show Favorites Bar).",
+    "step2": "Drag the button below to the bookmarks bar.",
+    "step3": "Click the bookmark while you are on a job ad.",
+    "linkLabel": "Add to Job tracker",
+    "dragNotClick": "Drag the button to the bookmarks bar. Clicking it here does nothing.",
+    "byHandTitle": "Cannot drag?",
+    "byHand": "Make the bookmark by hand: add a new bookmark (Ctrl+D), choose Edit or More, and paste the code as its address or URL. This is also the way if you use the keyboard.",
+    "copy": "Copy bookmark code",
+    "copied": "The code is copied.",
+    "copyFailed": "Copying did not work. Select the code below and copy it yourself.",
+    "codeLabel": "Bookmark code",
+    "address": "The bookmark opens: {address}",
+    "local": "You are viewing this page on your own computer. A bookmark made here only works while the app runs here. Make it from the real address.",
+    "limits": "Some sites block bookmarklets or do not state the job details. Then it opens with the link only, or not at all. Paste the link as usual instead. If the ad sits in a box inside another page, the wrong link may come along. If the app address changes, the bookmark has to be made again."
+  },
   "side": {
     "lastBackup": "Last backup: {date}",
-    "export": "Download"
+    "export": "Download",
+    "bookmarklet": "Add from a job ad"
   },
   "welcome": {
     "title": "A notepad for your job applications",
