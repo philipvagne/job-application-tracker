@@ -50,6 +50,11 @@ export interface AppContextValue {
   /** Set when the last save failed. Cleared by the next successful save or by dismissing. */
   saveError: SaveErrorCode | null
   backupDue: boolean
+  /**
+   * Goes up each time "delete all my data" succeeds. The main screen is keyed on it, so every
+   * bit of local screen state (typed text, an open form, a message) starts over, like a first visit.
+   */
+  dataResetCount: number
   /** False when this browser cannot store CV files (no IndexedDB), so uploads are off. */
   filesAvailable: boolean
   /** Whether a CV's file is stored here. Only meaningful for CVs that have file details. */
@@ -114,6 +119,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
   const [status, setStatus] = useState(initial.status)
   const [saveError, setSaveError] = useState<SaveErrorCode | null>(null)
   const [reminderDismissed, setReminderDismissed] = useState(false)
+  const [dataResetCount, setDataResetCount] = useState(0)
   // The latest state, readable from event handlers without waiting for a re-render.
   const stateRef = useRef(state)
   const statusRef = useRef(status)
@@ -225,6 +231,8 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         setSaveError(null)
         // Keeps the chosen language across a reload and reports whether saving works again.
         persist(empty)
+        setReminderDismissed(false)
+        setDataResetCount((count) => count + 1)
         return true
       },
 
@@ -360,8 +368,8 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
   const backupDue = !reminderDismissed && isBackupDue(state, nowIso())
 
   const value = useMemo<AppContextValue>(
-    () => ({ state, language, dict, t, status, saveError, backupDue, filesAvailable, fileStatus, actions }),
-    [state, language, dict, t, status, saveError, backupDue, filesAvailable, fileStatus, actions],
+    () => ({ state, language, dict, t, status, saveError, backupDue, dataResetCount, filesAvailable, fileStatus, actions }),
+    [state, language, dict, t, status, saveError, backupDue, dataResetCount, filesAvailable, fileStatus, actions],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

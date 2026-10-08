@@ -1,6 +1,6 @@
 import {
   daysSince,
-  firstNoteLine,
+  notePreview,
   hostOf,
   isHttpUrl,
   replyIndicator,
@@ -52,15 +52,36 @@ function CvName({ application, cvs }: Pick<CvProps, 'application' | 'cvs'>) {
   return <span>{t('row.cvName', { name: cv.name })}</span>
 }
 
-/** The first line of the notes, as plain text. The CSS cuts it to one line. */
-function NotePreview({ application }: { application: Application }) {
+interface NoteProps {
+  onShowNote: (application: Application) => void
+}
+
+/**
+ * A short preview of the notes, as plain text, and a button for the whole note when there is more.
+ * The hidden prefix says what the text is; the ellipsis is only a visual cue.
+ */
+function NotePreview({ application, onShowNote }: { application: Application } & NoteProps) {
   const { t } = useApp()
-  const line = firstNoteLine(application.notes)
-  if (line === null) return null
+  const preview = notePreview(application.notes)
+  if (preview === null) return null
   return (
     <p className="row__note">
       <span className="sr-only">{t('row.notePrefix')} </span>
-      {line}
+      <span className="row__note-text">{preview.text}</span>
+      {preview.truncated && <span aria-hidden="true">…</span>}
+      {preview.hasMore && (
+        <>
+          {' '}
+          <button
+            type="button"
+            className="btn btn--text"
+            aria-label={t('row.actionFor', { action: t('note.showFull'), company: application.company })}
+            onClick={() => onShowNote(application)}
+          >
+            {t('note.showAll')}
+          </button>
+        </>
+      )}
     </p>
   )
 }
@@ -100,12 +121,12 @@ function Reply({ kind }: { kind: Exclude<ReplyKind, 'none'> }) {
   )
 }
 
-interface ToApplyRowProps extends CvProps {
+interface ToApplyRowProps extends CvProps, NoteProps {
   onApplied: () => void
   onMenu: (action: MenuAction) => void
 }
 
-export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv }: ToApplyRowProps) {
+export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onShowNote }: ToApplyRowProps) {
   const { t } = useApp()
   const hasMeta = application.url !== '' || application.cvId !== undefined
   return (
@@ -118,7 +139,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv }: To
             <CvName application={application} cvs={cvs} />
           </p>
         )}
-        <NotePreview application={application} />
+        <NotePreview application={application} onShowNote={onShowNote} />
       </div>
       <div className="row__actions">
         <OpenCvButton application={application} cvs={cvs} onOpenCv={onOpenCv} />
@@ -137,14 +158,14 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv }: To
   )
 }
 
-interface AppliedRowProps extends CvProps {
+interface AppliedRowProps extends CvProps, NoteProps {
   now: string
   reminderDays: number
   onMenu: (action: MenuAction) => void
 }
 
 /** Rows in the applied, interview and offer tabs. */
-export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpenCv }: AppliedRowProps) {
+export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpenCv, onShowNote }: AppliedRowProps) {
   const { t, language } = useApp()
   // The same day count the reminder uses: local calendar days (see needsFollowUp).
   const days = application.appliedAt === undefined ? null : daysSince(application.appliedAt, now)
@@ -167,7 +188,7 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
           {application.url !== '' && <HostLink url={application.url} />}
           <CvName application={application} cvs={cvs} />
         </p>
-        <NotePreview application={application} />
+        <NotePreview application={application} onShowNote={onShowNote} />
       </div>
       <div className="row__actions">
         {reply !== 'none' && <Reply kind={reply} />}
@@ -178,12 +199,12 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
   )
 }
 
-interface ClosedRowProps extends CvProps {
+interface ClosedRowProps extends CvProps, NoteProps {
   onReopen: () => void
   onMenu: (action: MenuAction) => void
 }
 
-export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv }: ClosedRowProps) {
+export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShowNote }: ClosedRowProps) {
   const { t } = useApp()
   const company = application.company
   const reason = application.closedReason === undefined ? null : t(`closedReason.${application.closedReason}`)
@@ -200,7 +221,7 @@ export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv }: Clos
           {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
           <CvName application={application} cvs={cvs} />
         </p>
-        <NotePreview application={application} />
+        <NotePreview application={application} onShowNote={onShowNote} />
       </div>
       <div className="row__actions">
         <OpenCvButton application={application} cvs={cvs} onOpenCv={onOpenCv} />

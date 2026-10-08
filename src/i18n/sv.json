@@ -338,5 +338,10 @@
     },
     "addTitle": "Lägg till ditt första jobb",
     "tip": "Tips: ladda ner en säkerhetskopia då och då, så har du alltid en kopia av dina uppgifter."
+  },
+  "note": {
+    "showAll": "Visa hela",
+    "showFull": "Visa hela anteckningen",
+    "title": "Anteckning: {company}"
   }
 }

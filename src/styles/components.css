@@ -328,6 +328,13 @@
   border-top: 1px solid var(--border);
 }
 
+/* The whole note in its dialog: plain text, line breaks kept. */
+.note-full {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* A real file input, with the browser's button made to look like the other pill buttons. */
 .input--file {
   display: block;
@@ -570,6 +577,7 @@
 /* Rows: soft cards with a thin left border */
 .rows {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* without this, one wide row widens every row */
   gap: var(--space-3);
   list-style: none;
   margin: 0;
@@ -618,15 +626,16 @@
   font-size: var(--text-sm);
 }
 
-/* The first line of the notes: one line, cut with an ellipsis. */
+/* A short preview of the notes. It wraps like the rest of the row, so it can never widen it. */
 .row__note {
   margin: var(--space-1) 0 0;
-  overflow: hidden;
   color: var(--muted);
   font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.row__note-text {
   font-style: italic;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .row__status {

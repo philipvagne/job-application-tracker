@@ -6,7 +6,7 @@ import { SettingsDialog } from './ui/SettingsDialog'
 import { Tracker } from './ui/Tracker'
 
 export function App() {
-  const { t, language, actions } = useApp()
+  const { t, language, dataResetCount, actions } = useApp()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
@@ -38,7 +38,7 @@ export function App() {
 
       <main className="main">
         <Banners />
-        <Tracker />
+        <Tracker key={dataResetCount} />
       </main>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />

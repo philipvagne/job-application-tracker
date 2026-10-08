@@ -338,5 +338,10 @@
     },
     "addTitle": "Add your first job",
     "tip": "Tip: download a backup now and then, so you always have a copy of your data."
+  },
+  "note": {
+    "showAll": "Show full",
+    "showFull": "Show full note",
+    "title": "Note: {company}"
   }
 }

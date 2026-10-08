@@ -22,6 +22,7 @@ import { AppliedRow, ClosedRow, ToApplyRow } from './ApplicationRows'
 import { ConfirmDialog } from './ConfirmDialog'
 import { CV_ADD_BUTTON_ID, CvPanel } from './CvPanel'
 import { EditDialog } from './EditDialog'
+import { NoteDialog } from './NoteDialog'
 import { COMPANY_FIELD_ID, QuickAdd } from './QuickAdd'
 import type { MenuAction } from './RowMenu'
 import { SideNote } from './SideNote'
@@ -71,6 +72,7 @@ export function Tracker() {
   const [cvFileError, setCvFileError] = useState<FileErrorCode | null>(null)
   const [cvBusy, setCvBusy] = useState(false)
   const [editing, setEditing] = useState<Application | null>(null)
+  const [viewingNote, setViewingNote] = useState<Application | null>(null)
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [closeReason, setCloseReason] = useState<ClosedReason>('no_reply')
   // DOM ids to try, in order, once the next render is done.
@@ -390,6 +392,7 @@ export function Tracker() {
       cvs,
       onMenu: (action: MenuAction) => onMenu(a, action),
       onOpenCv: (cv: Cv) => void onOpenCv(cv),
+      onShowNote: setViewingNote,
     }
     if (a.status === 'to_apply') return <ToApplyRow key={a.id} {...common} onApplied={() => onApplied(a)} />
     if (a.status === 'closed') return <ClosedRow key={a.id} {...common} onReopen={() => onReopen(a)} />
@@ -442,6 +445,8 @@ export function Tracker() {
         onClose={() => setEditing(null)}
         onSaved={(company) => setMessage(t('announce.saved', { company }))}
       />
+
+      <NoteDialog application={viewingNote} onClose={() => setViewingNote(null)} />
 
       <ConfirmDialog
         open={confirm !== null}
