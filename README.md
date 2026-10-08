@@ -18,18 +18,18 @@ npm run build      # checks, type-check and production build into dist/
 npm run preview    # serves dist/ with the same security headers as the live site
 ```
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Workers, static assets)
 
-The app is a static site. Connect the GitHub repository in the Cloudflare dashboard (Workers & Pages, Create, Pages, Connect to Git) with these settings:
+The app is a static site, deployed as a Cloudflare Workers project that serves the `dist/` folder (see `wrangler.jsonc`; there is no Worker code). In the Cloudflare dashboard choose Workers & Pages, Create application, connect the GitHub repository, and enter:
 
 | Setting | Value |
 | --- | --- |
-| Framework preset | None |
+| Project name | `job-application-tracker` (must match `name` in `wrangler.jsonc`) |
 | Build command | `npm test && npm run build` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` (the default) |
 | Root directory | (empty) |
-| Environment variables | none; the Node version comes from `.node-version` |
+| Build variables | none; the Node version comes from `.node-version` |
 
-Every push to `main` builds and deploys. Security headers, caching and the "do not index" header come from `public/_headers`, which is copied into `dist/` by the build. To let search engines list the site later, delete the `X-Robots-Tag` block in that file.
+Every push to `main` builds and deploys. Security headers, caching and the "do not index" header come from `public/_headers`, which is copied into `dist/` by the build. To let search engines list the site later, delete the `X-Robots-Tag` block in that file. The `noindex` header keeps the site out of search results but does not hide it: anyone with the address can open it, and `workers.dev` addresses (including preview addresses) are public.
 
 **Your data lives in one browser at one address.** The browser keeps data separately for each address, so `localhost` and the live address do not share anything, and neither do two different browsers. To move your data, use Export in the settings on the old address and Import on the new one. The backup does not contain the CV files yet, so keep your original PDFs and upload them again if needed.
