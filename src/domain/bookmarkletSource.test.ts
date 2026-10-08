@@ -433,7 +433,7 @@ async function onPlatsbanken(fetchFn: FakeFetch | undefined, href = PB) {
 
 /** What the tracker reads when only the (canonical) link could be sent. */
 function expectLinkOnly(opened: Opened[]): void {
-  expect(fullPrefillOf(opened)).toEqual({ link: PB, company: '', role: '', occupation: '', deadline: '', outdatedBookmark: false })
+  expect(fullPrefillOf(opened)).toEqual({ link: PB, company: '', role: '', occupation: '', deadline: '', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false })
 }
 
 describe('Platsbanken: the ad address', () => {
@@ -517,6 +517,7 @@ describe('Platsbanken: the answer from the API', () => {
       role: 'Vill du bli vår nya kollega? Vi söker boendestödjare till Basvägen LSS',
       occupation: 'Vårdare/Arbetshandledare/Boendestödjare',
       deadline: '2026-11-08',
+      bookmarkVersion: CURRENT_BOOKMARK_VERSION,
       outdatedBookmark: false,
     })
     const call = only(opened)

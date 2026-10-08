@@ -1,3 +1,4 @@
+import { bookmarkVersionOfPayload, isOutdatedBookmarkVersion } from './bookmarkVersion'
 import { isHttpUrl } from './url'
 
 /** The only payload version this app reads. */
@@ -21,7 +22,9 @@ export interface AddPrefill {
   occupation: string
   /** The last application day as yyyy-mm-dd, or '' when unknown or not a real date. Used for the note only. */
   deadline: string
-  /** True when the bookmark that sent this is older than the current version. */
+  /** The version of the bookmark that sent this (1 when it did not say). */
+  bookmarkVersion: number
+  /** True when that is older than the current version. */
   outdatedBookmark: boolean
 }
 
@@ -82,12 +85,6 @@ export function cleanIsoDate(raw: string): string {
   return real && whole !== undefined ? whole : ''
 }
 
-/** True unless the bookmark version is a whole number at least as high as the current one. */
-function isOutdatedBookmark(raw: string | null): boolean {
-  if (raw === null || !/^\d{1,4}$/.test(raw)) return true
-  return Number(raw) < CURRENT_BOOKMARK_VERSION
-}
-
 /** The labels for the note, already in the user's language (from the language files). */
 export interface AddNoteLabels {
   occupation: string
@@ -136,6 +133,7 @@ export function readAddHash(hash: string): AddHashResult {
   if (link === null || link === undefined || company === undefined || role === undefined) return { kind: 'invalid' }
   if (occupation === undefined || deadline === undefined || bookmarkVersion === undefined) return { kind: 'invalid' }
 
+  const sentBy = bookmarkVersionOfPayload(bookmarkVersion)
   const trimmedLink = link.trim()
   if (!isHttpUrl(trimmedLink)) return { kind: 'invalid' }
   return {
@@ -146,7 +144,8 @@ export function readAddHash(hash: string): AddHashResult {
       role: cleanAddText(role ?? ''),
       occupation: cleanAddText(occupation ?? ''),
       deadline: cleanIsoDate(deadline ?? ''),
-      outdatedBookmark: isOutdatedBookmark(bookmarkVersion),
+      bookmarkVersion: sentBy,
+      outdatedBookmark: isOutdatedBookmarkVersion(sentBy, CURRENT_BOOKMARK_VERSION),
     },
   }
 }

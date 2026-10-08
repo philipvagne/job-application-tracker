@@ -1,6 +1,7 @@
 export * from './application'
 export * from './addPayload'
 export * from './bookmarkletSource'
+export * from './bookmarkVersion'
 export * from './backdrop'
 export * from './listView'
 export * from './backup'

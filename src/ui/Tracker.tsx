@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import {
+  CURRENT_BOOKMARK_VERSION,
   MAX_CV_FILE_BYTES,
   MAX_FILE_NAME_LENGTH,
   SELECTABLE_CLOSED_REASONS,
@@ -11,6 +12,7 @@ import {
   defaultTab,
   effectiveSort,
   filterAndSortApplications,
+  isOutdatedBookmarkVersion,
   neighbourApplications,
   reopenTarget,
   shouldShowListControls,
@@ -109,6 +111,16 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
   // remembered as a preference (not user data); a tab it does not fit uses its own default.
   const [query, setQuery] = useState('')
   const [savedSort, setSavedSort] = useState<SortKey | null>(() => preferences.getSort())
+
+  // The version of the bookmark last used, remembered so the bookmark dialog can say when it is old.
+  // A job arriving from a bookmark replaces it, so a new bookmark clears the warning.
+  const [lastBookmarkVersion, setLastBookmarkVersion] = useState<number | null>(() => preferences.getLastBookmarkVersion())
+  useEffect(() => {
+    if (incomingAdd === null || incomingAdd.result.kind !== 'prefill') return
+    const { bookmarkVersion } = incomingAdd.result.prefill
+    preferences.setLastBookmarkVersion(bookmarkVersion)
+    setLastBookmarkVersion(bookmarkVersion)
+  }, [incomingAdd, preferences])
 
   const now = new Date().toISOString()
 
@@ -453,6 +465,7 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
         cvId={cvId}
         incoming={incomingAdd}
         onIncomingHandled={onAddHandled}
+        onOpenBookmarklet={() => setBookmarkletOpen(true)}
         onSaved={(application) => {
           setQuery('')
           setTab(application.status)
@@ -525,7 +538,11 @@ export function Tracker({ incomingAdd, onAddHandled }: TrackerProps) {
 
       <NoteDialog application={viewingNote} onClose={() => setViewingNote(null)} />
 
-      <BookmarkletDialog open={bookmarkletOpen} onClose={() => setBookmarkletOpen(false)} />
+      <BookmarkletDialog
+        open={bookmarkletOpen}
+        outdated={isOutdatedBookmarkVersion(lastBookmarkVersion, CURRENT_BOOKMARK_VERSION)}
+        onClose={() => setBookmarkletOpen(false)}
+      />
 
       <ConfirmDialog
         open={deletingCv !== null}

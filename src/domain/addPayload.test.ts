@@ -5,7 +5,7 @@ import { CURRENT_BOOKMARK_VERSION, MAX_ADD_TEXT_LENGTH, buildAddNote, cleanAddTe
 
 const enc = encodeURIComponent
 /** What a payload without the new fields reads as. */
-const BASE = { occupation: '', deadline: '', outdatedBookmark: true }
+const BASE = { occupation: '', deadline: '', bookmarkVersion: 1, outdatedBookmark: true }
 const LINK = 'https://www.example.com/jobs/123?ref=a&b=c'
 
 function hash(fields: Record<string, string>, prefix = '#add=1&v=1'): string {
@@ -165,7 +165,7 @@ describe('occupation, deadline and bookmark version', () => {
     const result = readAddHash(hash({ u: LINK, oc: 'Vårdare/Arbetshandledare/Boendestödjare', dl: '2026-11-08' }, `#add=1&v=1&${bv}`))
     expect(result).toEqual({
       kind: 'prefill',
-      prefill: { link: LINK, company: '', role: '', occupation: 'Vårdare/Arbetshandledare/Boendestödjare', deadline: '2026-11-08', outdatedBookmark: false },
+      prefill: { link: LINK, company: '', role: '', occupation: 'Vårdare/Arbetshandledare/Boendestödjare', deadline: '2026-11-08', bookmarkVersion: CURRENT_BOOKMARK_VERSION, outdatedBookmark: false },
     })
   })
 

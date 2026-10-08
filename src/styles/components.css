@@ -1229,3 +1229,76 @@
 .bookmarklet__local {
   margin: 0 0 var(--space-3);
 }
+
+/* A callout that must not be missed: the real error colours, with the icon and bold text. */
+.callout--error {
+  border-color: var(--error);
+  border-left-color: var(--error);
+  background: var(--error-bg);
+}
+
+.callout--error .callout__icon {
+  color: var(--error);
+}
+
+.callout--error .callout__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.callout--error .btn {
+  font-weight: 400;
+}
+
+.bookmarklet__outdated {
+  margin: 0 0 var(--space-4);
+}
+
+/* "More information": a quiet disclosure with a 44px summary, built on <details> so the keyboard works without script. */
+.more-info {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.more-info > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-size);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.more-info > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more-info > summary::before {
+  content: '+';
+  display: inline-block;
+  width: 1rem;
+  text-align: center;
+}
+
+.more-info[open] > summary::before {
+  content: '−';
+}
+
+.more-info > summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+.more-info__body {
+  padding-bottom: var(--space-2);
+}
+
+.more-info__body p {
+  margin: 0 0 var(--space-3);
+}

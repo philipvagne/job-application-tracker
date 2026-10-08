@@ -19,7 +19,7 @@ describe('takeAddFromUrl', () => {
   it('returns the payload and removes the fragment, keeping path and query', () => {
     const { win, calls } = fakeWindow('#add=1&v=1&u=https%3A%2F%2Fa.se%2Fjob&jo=Acme')
     const result = takeAddFromUrl(win)
-    expect(result).toEqual({ kind: 'prefill', prefill: { link: 'https://a.se/job', company: 'Acme', role: '', occupation: '', deadline: '', outdatedBookmark: true } })
+    expect(result).toEqual({ kind: 'prefill', prefill: { link: 'https://a.se/job', company: 'Acme', role: '', occupation: '', deadline: '', bookmarkVersion: 1, outdatedBookmark: true } })
     expect(calls).toEqual(['/app/?lang=sv'])
   })
 

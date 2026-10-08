@@ -2,20 +2,24 @@ import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from 're
 import { CURRENT_BOOKMARK_VERSION, buildBookmarklet, isLocalAddress } from '../domain'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
+import { WarningIcon } from './WarningIcon'
 
 interface BookmarkletDialogProps {
   open: boolean
+  /** The bookmark last used is older than the current version. */
+  outdated: boolean
   onClose: () => void
 }
 
 type CopyState = 'idle' | 'copied' | 'failed'
 
 /**
- * Where the user gets the bookmarklet: a link to drag to the bookmarks bar, and a copy button for
- * making the bookmark by hand (the way for keyboard users). The `javascript:` address is set
- * through a ref, because React refuses it as an href prop. Clicking the link here only explains.
+ * Where the user gets the bookmarklet: why, how, a link to drag to the bookmarks bar, and a copy
+ * button for making the bookmark by hand (the way for keyboard users). The details of how it works
+ * are behind "More information". The `javascript:` address is set through a ref, because React
+ * refuses it as an href prop. Clicking the link here only explains.
  */
-export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
+export function BookmarkletDialog({ open, outdated, onClose }: BookmarkletDialogProps) {
   const { t } = useApp()
   const titleId = useId()
   const codeId = useId()
@@ -62,8 +66,13 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
         {t('bookmarklet.title')}
       </h2>
       <div className="dialog__body">
+        {outdated && (
+          <div role="alert" className="callout callout--error bookmarklet__outdated">
+            <WarningIcon />
+            <span className="callout__text">{t('bookmarklet.outdated')}</span>
+          </div>
+        )}
         <p>{t('bookmarklet.intro')}</p>
-        <p>{t('bookmarklet.platsbanken')}</p>
         {code === null ? (
           <p className="note">{t('bookmarklet.unavailable')}</p>
         ) : (
@@ -81,6 +90,7 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
             <p role="status" className="note">
               {dragHint ? t('bookmarklet.dragNotClick') : ''}
             </p>
+            <p>{t('bookmarklet.worksBest')}</p>
 
             <h3 className="bookmarklet__heading">{t('bookmarklet.byHandTitle')}</h3>
             <p>{t('bookmarklet.byHand')}</p>
@@ -106,10 +116,18 @@ export function BookmarkletDialog({ open, onClose }: BookmarkletDialogProps) {
               </div>
             )}
 
-            <p className="hint">{t('bookmarklet.address', { address: appUrl })}</p>
             {local && <p className="banner banner--warn bookmarklet__local">{t('bookmarklet.local')}</p>}
-            <p className="hint">{t('bookmarklet.limits')}</p>
-            <p className="hint">{t('bookmarklet.version', { version: String(CURRENT_BOOKMARK_VERSION) })}</p>
+
+            <details className="more-info">
+              <summary>{t('bookmarklet.moreInfo')}</summary>
+              <div className="more-info__body">
+                <p>{t('bookmarklet.howItWorks')}</p>
+                <p>{t('bookmarklet.blockedNote')}</p>
+                <p>{t('bookmarklet.address', { address: appUrl })}</p>
+                <p>{t('bookmarklet.remake')}</p>
+                <p>{t('bookmarklet.version', { version: String(CURRENT_BOOKMARK_VERSION) })}</p>
+              </div>
+            </details>
           </>
         )}
       </div>

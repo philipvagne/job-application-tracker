@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { applicationTitle, buildAddNote, decideQuickAdd, hostOf, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
 import type { IncomingAdd } from '../state/incomingAdd'
+import { WarningIcon } from './WarningIcon'
 
 /** A fixed id, so other parts of the page can move focus to the link field. */
 export const LINK_FIELD_ID = 'quick-add-link'
@@ -17,6 +18,8 @@ interface QuickAddProps {
   incoming: IncomingAdd | null
   /** Called once the payload has been used, so it is not used again. */
   onIncomingHandled: () => void
+  /** Opens the dialog where the bookmark is made. */
+  onOpenBookmarklet: () => void
   /** A job was saved. The tracker shows its tab. */
   onSaved: (application: Application) => void
   /** Links were pasted and added. They all go to To apply. */
@@ -36,15 +39,6 @@ function BookmarkIcon() {
   )
 }
 
-function WarningIcon() {
-  return (
-    <svg className="callout__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      <path d="M10 3 18 17H2L10 3z" />
-      <path d="M10 8.5v4M10 14.8v.1" />
-    </svg>
-  )
-}
-
 interface DuplicateWarning {
   existing: Application
   /** The button the user pressed, so "Add anyway" does what they asked for. */
@@ -55,7 +49,7 @@ interface DuplicateWarning {
  * A link, a CV and two buttons. Enter in a field saves to To apply. Company, role and a note
  * are behind a button, and so is the paste box. Focus stays in the link field for the next one.
  */
-export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, onSaved, onPasted, onAnnounce }: QuickAddProps) {
+export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, onOpenBookmarklet, onSaved, onPasted, onAnnounce }: QuickAddProps) {
   const { t, state, actions } = useApp()
   const headingId = `${LINK_FIELD_ID}-h`
   const companyId = useId()
@@ -250,12 +244,6 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
                 </span>
               </p>
             )}
-            {notice?.kind === 'info' && notice.outdatedBookmark && (
-              <p className="callout callout--info">
-                <BookmarkIcon />
-                <span className="callout__text">{t('quickAdd.bookmarkOutdated')}</span>
-              </p>
-            )}
           </div>
           <div role="alert" className="add__notice">
             {notice?.kind === 'problem' && (
@@ -263,6 +251,17 @@ export function QuickAdd({ heading, cvField, cvId, incoming, onIncomingHandled, 
                 <WarningIcon />
                 <span className="callout__text">{t('quickAdd.fromBookmarkletInvalid')}</span>
               </p>
+            )}
+            {notice?.kind === 'info' && notice.outdatedBookmark && (
+              <div className="callout callout--error">
+                <WarningIcon />
+                <span className="callout__text">
+                  <span>{t('quickAdd.bookmarkOutdated')}</span>
+                  <button type="button" className="btn" onClick={onOpenBookmarklet}>
+                    {t('quickAdd.makeNewBookmark')}
+                  </button>
+                </span>
+              </div>
             )}
           </div>
         </div>
