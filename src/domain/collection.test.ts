@@ -112,6 +112,13 @@ describe('markApplicationApplied', () => {
     expect(r.value.settings.lastCvId).toBe('cv1')
   })
 
+  it('marks applied with no CV, and leaves the last used CV as it was', () => {
+    const before = state({ settings: { ...state().settings, lastCvId: 'cv1' } })
+    const r = markApplicationApplied(before, 'a1', null, T1)
+    expect(r.ok && r.value.applications[0]).toEqual(app('a1', { status: 'applied', appliedAt: T1 }))
+    expect(r.ok && r.value.settings.lastCvId).toBe('cv1')
+  })
+
   it('fails for an unknown application or CV, and for an application that is not to_apply', () => {
     expect(markApplicationApplied(state(), 'zzz', 'cv1', T1)).toEqual({ ok: false, error: 'unknown_application' })
     expect(markApplicationApplied(state(), 'a1', 'zzz', T1)).toEqual({ ok: false, error: 'unknown_cv' })
@@ -196,8 +203,10 @@ describe('linkCv', () => {
     expect(r.ok && 'cvId' in (r.value.applications[0] ?? {})).toBe(false)
   })
 
-  it('refuses to remove the CV of an application that was sent', () => {
-    expect(linkCv(two(), 'a3', null)).toEqual({ ok: false, error: 'cv_required' })
+  it('removes the CV of an application that was sent', () => {
+    const r = linkCv(two(), 'a3', null)
+    const { cvId: _removed, ...withoutCv } = applied
+    expect(r.ok && r.value.applications[1]).toEqual(withoutCv)
   })
 
   it('refuses an unknown application or CV', () => {
@@ -223,10 +232,16 @@ describe('addAppliedApplication', () => {
     expect(before).toEqual(state())
   })
 
-  it('refuses an unknown CV, a missing CV, and an application that is not applied', () => {
+  it('refuses an unknown CV and an application that is not applied', () => {
     expect(addAppliedApplication(state(), { ...applied, cvId: 'nope' })).toEqual({ ok: false, error: 'unknown_cv' })
-    const { cvId: _cv, ...noCv } = applied
-    expect(addAppliedApplication(state(), noCv)).toEqual({ ok: false, error: 'unknown_cv' })
     expect(addAppliedApplication(state(), app('n2'))).toEqual({ ok: false, error: 'not_applied' })
+  })
+
+  it('accepts an application with no CV and leaves the last used CV alone', () => {
+    const { cvId: _cv, ...noCv } = applied
+    const before = state({ settings: { ...state().settings, lastCvId: 'cv2' } })
+    const r = addAppliedApplication(before, noCv)
+    expect(r.ok && r.value.applications.map((a) => a.id)).toEqual(['a1', 'a2', 'n1'])
+    expect(r.ok && r.value.settings.lastCvId).toBe('cv2')
   })
 })

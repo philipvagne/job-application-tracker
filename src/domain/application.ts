@@ -14,7 +14,6 @@ export type TransitionError =
   | 'same_status'
   | 'invalid_transition'
   | 'closed_reason_required'
-  | 'cv_required'
 
 export type ApplicationFieldError = 'company_or_link_required' | 'invalid_url'
 
@@ -50,7 +49,7 @@ export function createApplication(input: NewApplicationInput, now: IsoDate): App
     status: 'to_apply',
     createdAt: now,
   }
-  if (input.cvId !== undefined) application.cvId = input.cvId
+  if (input.cvId !== undefined && input.cvId !== '') application.cvId = input.cvId
   if (input.notes !== undefined && input.notes.trim() !== '') application.notes = input.notes
   return application
 }
@@ -67,15 +66,14 @@ export function newApplication(
 
 /**
  * Like newApplication, but the result is already applied: status applied, appliedAt now, and
- * the CV used. The CV is required, the same as when marking an application as applied.
+ * the CV used, if there is one (an empty cvId means no CV).
  */
 export function newAppliedApplication(
-  input: NewApplicationInput & { cvId: string },
+  input: NewApplicationInput,
   now: IsoDate,
-): Result<Application, (ApplicationFieldError | 'cv_required')[]> {
+): Result<Application, ApplicationFieldError[]> {
   const errors = validateApplicationFields(input)
   if (errors.length > 0) return { ok: false, error: errors }
-  if (input.cvId === '') return { ok: false, error: ['cv_required'] }
   return { ok: true, value: { ...createApplication(input, now), status: 'applied', appliedAt: now } }
 }
 
@@ -101,14 +99,20 @@ export function updateApplication(
   return { ok: true, value: next }
 }
 
-/** Moves a to-apply application to applied, recording the date and the CV used. */
+/**
+ * Moves a to-apply application to applied, recording the date and the CV used. With null
+ * (no CV) any CV the application had is removed.
+ */
 export function markApplied(
   application: Application,
-  cvId: string,
+  cvId: string | null,
   now: IsoDate,
 ): Result<Application, TransitionError> {
   if (application.status !== 'to_apply') return { ok: false, error: 'invalid_transition' }
-  return { ok: true, value: { ...application, status: 'applied', cvId, appliedAt: now } }
+  const { cvId: _old, ...rest } = application
+  const next: Application = { ...rest, status: 'applied', appliedAt: now }
+  if (cvId !== null && cvId !== '') next.cvId = cvId
+  return { ok: true, value: next }
 }
 
 const ALLOWED: Record<Status, readonly Status[]> = {
@@ -155,8 +159,8 @@ function withoutApplied(application: Application): Application {
  * - Reaching applied, interview or offer fills appliedAt if missing. Reaching
  *   interview or offer also fills repliedAt and interviewAt if missing, and offer
  *   fills offerAt. interviewAt and offerAt are never cleared.
- * - A result that has appliedAt needs a CV: `cvId` if given, else the one the
- *   application already has, else the error cv_required.
+ * - A CV is optional: `cvId`, if given, replaces the one the application has; otherwise
+ *   the application keeps what it has (possibly nothing).
  */
 export function changeStatus(
   application: Application,
@@ -169,10 +173,8 @@ export function changeStatus(
   if (from === to) return { ok: false, error: 'same_status' }
 
   const withCv = (next: Application): Result<Application, TransitionError> => {
-    const chosen = cvId !== undefined && cvId !== '' ? cvId : next.cvId
-    if (next.appliedAt === undefined) return { ok: true, value: next }
-    if (chosen === undefined) return { ok: false, error: 'cv_required' }
-    return { ok: true, value: { ...next, cvId: chosen } }
+    if (cvId === undefined || cvId === '') return { ok: true, value: next }
+    return { ok: true, value: { ...next, cvId } }
   }
 
   if (to === 'closed') {

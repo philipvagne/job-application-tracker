@@ -73,11 +73,27 @@ describe('replyStatsByCv', () => {
     expect(replyStatsByCv(list, cvs).map((r) => r.applied)).toEqual([0, 0])
   })
 
-  it('handles applications without a CV', () => {
+  it('counts applied applications without a CV as their own last group', () => {
     const { cvId: _removed, ...noCv } = app('x')
     const { appliedAt: _applied, ...rest } = noCv
     const toApply: Application = { ...rest, status: 'to_apply' }
-    expect(replyStatsByCv([noCv, toApply, app('y')], cvs).map((r) => r.applied)).toEqual([1, 0])
+    const replied = { ...noCv, id: 'z', repliedAt: '2026-09-05T00:00:00.000Z', interviewAt: '2026-09-06T00:00:00.000Z' }
+    expect(replyStatsByCv([noCv, replied, toApply, app('y')], cvs)).toEqual([
+      { cvId: 'cv1', name: 'Short', applied: 1, replied: 0, interviews: 0 },
+      { cvId: 'cv2', name: 'Long', applied: 0, replied: 0, interviews: 0 },
+      { cvId: null, name: '', applied: 2, replied: 1, interviews: 1 },
+    ])
+  })
+
+  it('has no group without a CV when every application has one, or only to-apply ones lack it', () => {
+    const { cvId: _removed, appliedAt: _applied, ...rest } = app('x')
+    const toApply: Application = { ...rest, status: 'to_apply' }
+    expect(replyStatsByCv([app('a'), toApply], cvs).map((r) => r.cvId)).toEqual(['cv1', 'cv2'])
+  })
+
+  it('shows the no-CV group even when there are no CVs at all', () => {
+    const { cvId: _removed, ...noCv } = app('x')
+    expect(replyStatsByCv([noCv], [])).toEqual([{ cvId: null, name: '', applied: 1, replied: 0, interviews: 0 }])
   })
 
   it('counts closed applications that were applied', () => {

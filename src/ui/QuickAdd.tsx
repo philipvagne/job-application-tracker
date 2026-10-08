@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { applicationTitle, decideQuickAdd, type Application, type ApplicationFieldError, type QuickAddTarget } from '../domain'
 import { useApp } from '../state/AppContext'
 
@@ -12,8 +12,6 @@ interface QuickAddProps {
   cvField: ReactNode
   /** The CV in the picker; '' is "No CV". */
   cvId: string
-  /** Saving as applied needs a CV: the tracker shows the CV error, or opens the CV form when there are no CVs. */
-  onNeedsCv: (noCvs: boolean) => void
   /** A job was saved. The tracker shows its tab. */
   onSaved: (application: Application) => void
   /** Links were pasted and added. They all go to To apply. */
@@ -32,7 +30,7 @@ interface DuplicateWarning {
  * A link, a CV and two buttons. Enter in a field saves to To apply. Company, role and a note
  * are behind a button, and so is the paste box. Focus stays in the link field for the next one.
  */
-export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted, onAnnounce }: QuickAddProps) {
+export function QuickAdd({ heading, cvField, cvId, onSaved, onPasted, onAnnounce }: QuickAddProps) {
   const { t, state, actions } = useApp()
   const headingId = `${LINK_FIELD_ID}-h`
   const companyId = useId()
@@ -44,6 +42,8 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
   const pasteId = useId()
   const pasteHintId = useId()
   const pasteResultId = useId()
+  const moreId = useId()
+  const pastePanelId = useId()
 
   const companyRef = useRef<HTMLInputElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
@@ -57,6 +57,16 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
   const [duplicate, setDuplicate] = useState<DuplicateWarning | null>(null)
   const [pasteText, setPasteText] = useState('')
   const [pasteResult, setPasteResult] = useState('')
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [pasteOpen, setPasteOpen] = useState(false)
+
+  // Opening a panel moves focus into it, as the old disclosure did for the company field.
+  useEffect(() => {
+    if (moreOpen) companyRef.current?.focus()
+  }, [moreOpen])
+  useEffect(() => {
+    if (pasteOpen) pasteRef.current?.focus()
+  }, [pasteOpen])
 
   const linkInvalid = errors.includes('invalid_url')
   const linkMissing = errors.includes('company_or_link_required')
@@ -70,11 +80,7 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
     .join(' ')
 
   function save(target: QuickAddTarget, allowDuplicate: boolean): void {
-    const decision = decideQuickAdd(
-      { company, url: link, target, cvId, allowDuplicate },
-      state.applications,
-      state.cvs,
-    )
+    const decision = decideQuickAdd({ company, url: link, target, cvId, allowDuplicate }, state.applications)
     if (decision.kind === 'invalid') {
       setErrors(decision.errors)
       setDuplicate(null)
@@ -82,11 +88,6 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
       return
     }
     setErrors([])
-    if (decision.kind === 'needs_cv') {
-      setDuplicate(null)
-      onNeedsCv(decision.noCvs)
-      return
-    }
     if (decision.kind === 'duplicate') {
       setDuplicate({ existing: decision.existing, target })
       linkRef.current?.focus()
@@ -96,9 +97,8 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
     const fields = { company, role, url: link, notes }
     const result = target === 'applied' ? actions.addAppliedApplication({ ...fields, cvId }) : actions.addApplication(fields)
     if (!result.ok) {
-      // The decision above already passed, so this is only a CV that disappeared meanwhile.
-      if (result.error.includes('cv_required')) onNeedsCv(state.cvs.length === 0)
-      else setErrors(result.error.filter((e): e is ApplicationFieldError => e !== 'cv_required'))
+      // The decision above already passed, so the only way to get here is a CV that disappeared meanwhile.
+      setErrors(result.error.filter((e): e is ApplicationFieldError => e !== 'unknown_cv'))
       return
     }
     setDuplicate(null)
@@ -187,16 +187,28 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
           <button type="button" className="btn" onClick={() => save('applied', false)}>
             {t('quickAdd.saveApplied')}
           </button>
+          <button
+            type="button"
+            className="add__toggle"
+            aria-expanded={moreOpen}
+            aria-controls={moreOpen ? moreId : undefined}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            {t('quickAdd.moreToggle')}
+          </button>
+          <button
+            type="button"
+            className="add__toggle"
+            aria-expanded={pasteOpen}
+            aria-controls={pasteOpen ? pastePanelId : undefined}
+            onClick={() => setPasteOpen((open) => !open)}
+          >
+            {t('paste.summary')}
+          </button>
         </div>
 
-        <details
-          className="paste"
-          onToggle={(e) => {
-            if (e.currentTarget.open) companyRef.current?.focus()
-          }}
-        >
-          <summary className="paste__summary">{t('quickAdd.moreToggle')}</summary>
-          <div className="add__more">
+        {moreOpen && (
+          <div id={moreId} className="add__more">
             <div className="field">
               <label htmlFor={companyId}>{t('field.company')}</label>
               <input
@@ -231,12 +243,11 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
               />
             </div>
           </div>
-        </details>
+        )}
       </form>
 
-      <details className="paste">
-        <summary className="paste__summary">{t('paste.summary')}</summary>
-        <form onSubmit={onPaste}>
+      {pasteOpen && (
+        <form id={pastePanelId} className="paste" onSubmit={onPaste}>
           <div className="field">
             <label htmlFor={pasteId}>{t('paste.label')}</label>
             <textarea
@@ -259,7 +270,7 @@ export function QuickAdd({ heading, cvField, cvId, onNeedsCv, onSaved, onPasted,
             {pasteResult}
           </p>
         </form>
-      </details>
+      )}
     </section>
   )
 }

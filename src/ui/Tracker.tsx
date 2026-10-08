@@ -50,7 +50,6 @@ export function Tracker() {
   const { applications, cvs, settings } = state
 
   const cvSelectId = useId()
-  const cvErrorId = useId()
   const cvNameId = useId()
   const cvNameErrorId = useId()
   const cvFileId = useId()
@@ -65,10 +64,8 @@ export function Tracker() {
   const [message, setMessage] = useState('')
   // null: the user has not picked yet, so the last used CV is shown. '' is an explicit "No CV".
   const [pickedCvId, setPickedCvId] = useState<string | null>(null)
-  // 'choose': pick one of the CVs. 'add': there are none, add one first.
-  const [cvSelectError, setCvSelectError] = useState<'choose' | 'add' | null>(null)
-  // The inline CV form. `applyId` is the application waiting for a first CV, if any.
-  const [cvForm, setCvForm] = useState<{ applyId: string | null } | null>(null)
+  // The inline form for adding a CV.
+  const [cvFormOpen, setCvFormOpen] = useState(false)
   const [cvName, setCvName] = useState('')
   const [cvNameError, setCvNameError] = useState<CvError | null>(null)
   const [cvFile, setCvFile] = useState<File | null>(null)
@@ -112,8 +109,8 @@ export function Tracker() {
   }, [focusIds])
 
   useEffect(() => {
-    if (cvForm !== null) cvNameRef.current?.focus()
-  }, [cvForm])
+    if (cvFormOpen) cvNameRef.current?.focus()
+  }, [cvFormOpen])
 
   useEffect(() => {
     if (message === '') return
@@ -137,49 +134,25 @@ export function Tracker() {
     return [...ids, tabId(application.status), LINK_FIELD_ID]
   }
 
-  function applyNow(application: Application, chosenCvId: string): void {
+  /** Marks the row as applied with the CV in the picker; '' is "No CV". */
+  function onApplied(application: Application): void {
     const next = neighbourIds(application)
-    if (!actions.markApplied(application.id, chosenCvId)) return
+    if (!actions.markApplied(application.id, cvId === '' ? null : cvId)) return
     setMessage(t('announce.markedApplied', { company: applicationTitle(application) }))
     setFocusIds(next)
   }
 
-  function openCvForm(applyId: string | null): void {
+  function openCvForm(): void {
     setCvName('')
     setCvNameError(null)
     setCvFile(null)
     setCvFileError(null)
-    setCvForm({ applyId })
-  }
-
-  function onApplied(application: Application): void {
-    if (cvs.length === 0) {
-      openCvForm(application.id)
-      return
-    }
-    if (cvId === '') {
-      setCvSelectError('choose')
-      cvSelectRef.current?.focus()
-      return
-    }
-    applyNow(application, cvId)
-  }
-
-  /** "Save as already applied" without a CV: ask for one, the same way "Mark as applied" does. */
-  function onNeedsCv(noCvs: boolean): void {
-    if (noCvs) {
-      setCvSelectError('add')
-      openCvForm(null)
-      return
-    }
-    setCvSelectError('choose')
-    cvSelectRef.current?.focus()
+    setCvFormOpen(true)
   }
 
   function onCvSelect(value: string): void {
-    setCvSelectError(null)
     if (value === ADD_CV) {
-      openCvForm(null)
+      openCvForm()
       return
     }
     setPickedCvId(value)
@@ -194,7 +167,6 @@ export function Tracker() {
   async function onCvSubmit(event: FormEvent): Promise<void> {
     event.preventDefault()
     if (cvBusy) return
-    const pending = cvForm?.applyId ?? null
     setCvNameError(null)
     setCvFileError(null)
 
@@ -225,25 +197,18 @@ export function Tracker() {
     }
 
     setPickedCvId(created.id)
-    setCvSelectError(null)
-    setCvForm(null)
+    setCvFormOpen(false)
     setCvFile(null)
-    const waiting = pending === null ? undefined : applications.find((a) => a.id === pending)
-    if (waiting !== undefined) {
-      applyNow(waiting, created.id)
-    } else {
-      setMessage(t('announce.cvAdded', { name: created.name }))
-      setFocusIds([cvSelectId, CV_ADD_BUTTON_ID])
-    }
+    setMessage(t('announce.cvAdded', { name: created.name }))
+    setFocusIds([cvSelectId, CV_ADD_BUTTON_ID])
   }
 
   function cancelCvForm(): void {
-    const pending = cvForm?.applyId ?? null
-    setCvForm(null)
+    setCvFormOpen(false)
     setCvNameError(null)
     setCvFileError(null)
     setCvFile(null)
-    setFocusIds(pending === null ? [cvSelectId, CV_ADD_BUTTON_ID] : [`apply-${pending}`])
+    setFocusIds([cvSelectId, CV_ADD_BUTTON_ID])
   }
 
   async function onOpenCv(cv: Cv): Promise<void> {
@@ -320,9 +285,8 @@ export function Tracker() {
       : t(`cvFile.error.${cvFileError}`, { max: cvFileError === 'name_too_long' ? MAX_FILE_NAME_LENGTH : MAX_FILE_MB })
 
   const cvFormNode =
-    cvForm === null ? null : (
+    !cvFormOpen ? null : (
       <form className="cv-form" onSubmit={(e) => void onCvSubmit(e)} noValidate>
-        {cvForm.applyId !== null && cvs.length === 0 && <p>{t('cv.firstPrompt')}</p>}
         <div className="field">
           <label htmlFor={cvNameId}>{t('cv.nameLabel')}</label>
           <input
@@ -362,7 +326,7 @@ export function Tracker() {
         </div>
         <div className="cv-form__actions">
           <button type="submit" className="btn btn--primary" disabled={cvBusy}>
-            {cvForm.applyId !== null ? t('cv.saveAndApply') : t('cv.save')}
+            {t('cv.save')}
           </button>
           <button type="button" className="btn" onClick={cancelCvForm}>
             {t('common.cancel')}
@@ -381,8 +345,7 @@ export function Tracker() {
         className="input input--select"
         value={cvId}
         onChange={(e) => onCvSelect(e.target.value)}
-        aria-invalid={cvSelectError !== null}
-        aria-describedby={cvSelectError !== null ? `${cvHelpId} ${cvErrorId}` : cvHelpId}
+        aria-describedby={cvHelpId}
       >
         <option value="">{t('quickAdd.noCv')}</option>
         {cvs.map((cv) => (
@@ -394,9 +357,6 @@ export function Tracker() {
       </select>
       <p id={cvHelpId} className="hint">
         {t('quickAdd.cvHelp')}
-      </p>
-      <p id={cvErrorId} className="error">
-        {cvSelectError === 'choose' ? t('cv.required') : cvSelectError === 'add' ? t('cv.requiredNone') : ''}
       </p>
     </div>
   )
@@ -420,13 +380,12 @@ export function Tracker() {
         {message}
       </p>
 
-      {firstVisit && <Welcome cvForm={cvFormNode} onAddCv={() => openCvForm(null)} />}
+      {firstVisit && <Welcome cvForm={cvFormNode} onAddCv={openCvForm} />}
 
       <QuickAdd
         heading={firstVisit ? t('welcome.addTitle') : t('quickAdd.title')}
         cvField={cvFieldNode}
         cvId={cvId}
-        onNeedsCv={onNeedsCv}
         onSaved={(application) => setTab(application.status)}
         onPasted={() => setTab('to_apply')}
         onAnnounce={setMessage}
@@ -450,7 +409,7 @@ export function Tracker() {
             <CvPanel
               cvs={cvs}
               applications={applications}
-              onAdd={() => openCvForm(null)}
+              onAdd={openCvForm}
               onOpenCv={(cv) => void onOpenCv(cv)}
               form={cvFormNode}
             />

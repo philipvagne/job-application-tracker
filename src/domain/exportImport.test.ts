@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { exportData, importData, type ImportError } from './exportImport'
-import type { AppState } from './types'
+import type { AppState, Application } from './types'
 
 const state: AppState = {
   cvs: [
@@ -95,6 +95,12 @@ describe('round trip', () => {
   it('restores the state exactly, through JSON text', () => {
     const text = JSON.stringify(exportData(state))
     expect(importData(JSON.parse(text))).toEqual({ ok: true, state })
+  })
+
+  it('round-trips an applied application with no CV', () => {
+    const { cvId: _removed, ...noCv } = state.applications[0] as Application
+    const withoutCv: AppState = { ...state, applications: [noCv] }
+    expect(importData(JSON.parse(JSON.stringify(exportData(withoutCv))))).toEqual({ ok: true, state: withoutCv })
   })
 
   it('round-trips an empty state', () => {
@@ -291,13 +297,11 @@ describe('importData rejects bad input without throwing', () => {
     expect(importData(mutateApp((a) => delete a['cvId'], 0)).ok).toBe(true)
   })
 
-  it('needs a CV whenever appliedAt is present', () => {
-    expect(errorsOf(mutateApp((a) => delete a['cvId']))).toEqual([
-      { code: 'missing_field', path: 'applications[1].cvId' },
-    ])
-    expect(errorsOf(mutateApp((a) => { delete a['cvId']; a['appliedAt'] = '2026-10-01T08:00:00.000Z' }, 0))).toEqual([
-      { code: 'missing_field', path: 'applications[0].cvId' },
-    ])
+  it('accepts an application that has been sent without a CV', () => {
+    const r = importData(mutateApp((a) => delete a['cvId']))
+    expect(r.ok && r.state.applications[1]?.appliedAt).toBeDefined()
+    expect(r.ok && 'cvId' in (r.state.applications[1] ?? {})).toBe(false)
+    expect(importData(mutateApp((a) => { delete a['cvId']; a['appliedAt'] = '2026-10-01T08:00:00.000Z' }, 0)).ok).toBe(true)
   })
 
   it('checks a CV that is present even before the application has been sent', () => {

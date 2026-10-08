@@ -516,21 +516,22 @@
   margin-top: var(--space-3);
 }
 
-.add__actions + .paste {
-  margin-top: var(--space-2);
-}
-
-.paste__summary {
+/* The two "+" toggles sit in the actions row, after the save buttons. */
+.add__toggle {
   display: inline-flex;
   align-items: center;
   min-height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   color: var(--accent);
   font-weight: 500;
   cursor: pointer;
   border-radius: var(--radius);
 }
 
-.paste__summary:hover {
+.add__toggle:hover {
   color: var(--accent-hover);
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -957,6 +958,11 @@
   .add__link,
   .add__cv {
     grid-column: 1;
+  }
+
+  /* Phone width: the toggles take their own lines under the save buttons instead of wrapping unevenly. */
+  .add__toggle {
+    flex: 1 1 100%;
   }
 
   .dialog__actions .btn {

@@ -132,7 +132,7 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
           onChange={(e) => setCvId(e.target.value)}
           aria-describedby={cvStatusText === '' ? undefined : cvStatusId}
         >
-          {application.appliedAt === undefined && <option value="">{t('editApp.noCv')}</option>}
+          <option value="">{t('editApp.noCv')}</option>
           {state.cvs.map((cv) => (
             <option key={cv.id} value={cv.id}>
               {cv.name}

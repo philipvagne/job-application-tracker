@@ -29,25 +29,19 @@ describe('parsePastedList', () => {
     expect(items.map((i) => i.url)).toEqual(['https://a.se', 'https://b.se', 'https://c.se'])
   })
 
-  it('splits a job title into role and company', () => {
-    expect(parsePastedList('Frontend Developer - Acme AB | LinkedIn').items).toEqual([
-      { url: '', company: 'Acme AB', role: 'Frontend Developer' },
-    ])
-    expect(parsePastedList('Designer at Globex').items[0]).toEqual({ url: '', company: 'Globex', role: 'Designer' })
-  })
-
-  it('uses the whole line as company when the title cannot be split', () => {
-    expect(parsePastedList('Initech').items).toEqual([{ url: '', company: 'Initech', role: '' }])
-    expect(parsePastedList('Acme: Developer').items[0]?.company).toBe('Acme: Developer')
-  })
-
-  it('accepts a company of exactly 120 characters and skips 121', () => {
-    expect(parsePastedList('x'.repeat(120))).toEqual({
-      items: [{ url: '', company: 'x'.repeat(120), role: '' }],
-      skipped: 0,
-      duplicates: 0,
-    })
+  it('skips lines that are not links, and does not turn them into companies', () => {
+    expect(parsePastedList('Frontend Developer - Acme AB | LinkedIn')).toEqual({ items: [], skipped: 1, duplicates: 0 })
+    expect(parsePastedList('Designer at Globex')).toEqual({ items: [], skipped: 1, duplicates: 0 })
+    expect(parsePastedList('Initech')).toEqual({ items: [], skipped: 1, duplicates: 0 })
     expect(parsePastedList('x'.repeat(121))).toEqual({ items: [], skipped: 1, duplicates: 0 })
+  })
+
+  it('counts added, duplicate and skipped lines in a mixed paste', () => {
+    const text = ['https://a.se/1', 'Initech', '', 'https://a.se/1', 'https://b.se/2', 'javascript:alert(1)'].join('\n')
+    const r = parsePastedList(text, [{ url: 'https://b.se/2' }])
+    expect(r.items.map((i) => i.url)).toEqual(['https://a.se/1'])
+    expect(r.duplicates).toBe(2)
+    expect(r.skipped).toBe(2)
   })
 
   it('skips links that are not http or https, and broken links', () => {
@@ -80,11 +74,8 @@ describe('parsePastedList', () => {
     expect(parsePastedList(`${'\n'.repeat(300)}https://a.se`).items).toHaveLength(1)
   })
 
-  it('keeps markup as plain text', () => {
-    expect(parsePastedList('<img src=x onerror=alert(1)>').items[0]?.company).toBe('<img src=x onerror=alert(1)>')
-  })
-
-  it('handles emoji and non-Latin text', () => {
-    expect(parsePastedList('Östra Sjukhuset 🏥').items[0]?.company).toBe('Östra Sjukhuset 🏥')
+  it('skips markup and emoji text instead of adding it', () => {
+    expect(parsePastedList('<img src=x onerror=alert(1)>')).toEqual({ items: [], skipped: 1, duplicates: 0 })
+    expect(parsePastedList('Östra Sjukhuset 🏥')).toEqual({ items: [], skipped: 1, duplicates: 0 })
   })
 })

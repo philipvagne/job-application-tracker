@@ -117,8 +117,8 @@
   },
   "paste": {
     "summary": "+ Add several links at once",
-    "label": "One link or job title per line",
-    "hint": "Up to 200 lines. Blank lines are ignored. Everything goes to To apply.",
+    "label": "One link per line",
+    "hint": "Up to 200 lines. Blank lines are ignored. Lines that are not links are skipped. Everything goes to To apply.",
     "add": "Add all",
     "empty": "Paste at least one line first.",
     "result": "Added: {added}. Already in the list: {duplicates}. Skipped lines: {skipped}."
@@ -127,10 +127,6 @@
     "addOption": "Add a CV",
     "nameLabel": "CV name",
     "save": "Save CV",
-    "saveAndApply": "Save and mark as applied",
-    "firstPrompt": "Which CV are you using? Give it a name. Next time you can pick it from a list.",
-    "required": "Choose the CV you sent.",
-    "requiredNone": "Add a CV first, so you can see later what you sent.",
     "nameRequired": "Enter a name for the CV.",
     "nameTaken": "You already have a CV with that name."
   },

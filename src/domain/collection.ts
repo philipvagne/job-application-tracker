@@ -12,8 +12,9 @@ export function addApplications(state: AppState, applications: readonly Applicat
 }
 
 /**
- * Adds an application that is already applied, and remembers its CV as the last used. Refused,
- * changing nothing, if it is not applied, has no appliedAt, or its CV does not exist.
+ * Adds an application that is already applied, and remembers its CV (if it has one) as the
+ * last used. Refused, changing nothing, if it is not applied, has no appliedAt, or its CV
+ * is given but does not exist.
  */
 export function addAppliedApplication(
   state: AppState,
@@ -23,8 +24,9 @@ export function addAppliedApplication(
     return { ok: false, error: 'not_applied' }
   }
   const cvId = application.cvId
-  if (cvId === undefined || !state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
+  if (cvId !== undefined && !state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
   const next = addApplications(state, [application])
+  if (cvId === undefined) return { ok: true, value: next }
   return { ok: true, value: { ...next, settings: { ...next.settings, lastCvId: cvId } } }
 }
 
@@ -62,12 +64,12 @@ export function addCv(
   return { ok: true, value: { ...state, cvs: [...state.cvs, cv] } }
 }
 
-export type LinkCvError = 'unknown_application' | 'unknown_cv' | 'cv_required'
+export type LinkCvError = 'unknown_application' | 'unknown_cv'
 
 /**
- * Links an application to a CV entry, or removes the link with null. An application that
- * has been sent (appliedAt) must keep a CV, so null is refused for it. Changing the link
- * after applying is allowed; the per-CV statistics then follow the new CV.
+ * Links an application to a CV entry, or removes the link with null (no CV), also after it
+ * has been sent. Changing the link after applying is allowed; the per-CV statistics then
+ * follow the new CV.
  */
 export function linkCv(
   state: AppState,
@@ -77,7 +79,6 @@ export function linkCv(
   const application = state.applications.find((a) => a.id === applicationId)
   if (application === undefined) return { ok: false, error: 'unknown_application' }
   if (cvId === null) {
-    if (application.appliedAt !== undefined) return { ok: false, error: 'cv_required' }
     if (application.cvId === undefined) return { ok: true, value: state }
     const { cvId: _removed, ...rest } = application
     return { ok: true, value: replaceApplication(state, rest) }
@@ -87,18 +88,22 @@ export function linkCv(
   return { ok: true, value: replaceApplication(state, { ...application, cvId }) }
 }
 
-/** Marks one application as applied with an existing CV, and remembers that CV as the last used. */
+/**
+ * Marks one application as applied with an existing CV, or with null for no CV. A CV is
+ * remembered as the last used; no CV leaves that as it was.
+ */
 export function markApplicationApplied(
   state: AppState,
   id: string,
-  cvId: string,
+  cvId: string | null,
   now: IsoDate,
 ): Result<AppState, ApplyError> {
   const application = state.applications.find((a) => a.id === id)
   if (application === undefined) return { ok: false, error: 'unknown_application' }
-  if (!state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
+  if (cvId !== null && !state.cvs.some((cv) => cv.id === cvId)) return { ok: false, error: 'unknown_cv' }
   const result = markApplied(application, cvId, now)
   if (!result.ok) return result
   const next = replaceApplication(state, result.value)
+  if (cvId === null) return { ok: true, value: next }
   return { ok: true, value: { ...next, settings: { ...next.settings, lastCvId: cvId } } }
 }

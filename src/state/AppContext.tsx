@@ -76,8 +76,8 @@ export interface AppContextValue {
     /** Adds a to-apply application. Fails, changing nothing, if there is no link or company, or the link is not acceptable. */
     addApplication(input: { company: string; role: string; url: string; notes?: string }): Result<Application, ApplicationFieldError[]>
     /**
-     * Adds an application that is already applied, with this CV, and remembers the CV. Fails,
-     * changing nothing, if the fields are not acceptable or the CV does not exist.
+     * Adds an application that is already applied, with this CV (empty: no CV), and remembers
+     * the CV. Fails, changing nothing, if the fields are not acceptable or the CV does not exist.
      */
     addAppliedApplication(input: {
       company: string
@@ -85,7 +85,7 @@ export interface AppContextValue {
       url: string
       notes?: string
       cvId: string
-    }): Result<Application, (ApplicationFieldError | 'cv_required')[]>
+    }): Result<Application, (ApplicationFieldError | 'unknown_cv')[]>
     /**
      * Adds every usable line of pasted text as to-apply. Returns how many were added, how many
      * links were already in the list, and how many lines were skipped.
@@ -101,8 +101,8 @@ export interface AppContextValue {
     openCv(cvId: string): Promise<'ok' | ReadCvError>
     /** Links an application to a CV entry, or removes the link with null. */
     linkCv(applicationId: string, cvId: string | null): Result<null, LinkCvError>
-    /** Marks a to-apply application as applied with this CV, and remembers the CV. */
-    markApplied(id: string, cvId: string): boolean
+    /** Marks a to-apply application as applied with this CV (null: no CV), and remembers a CV. */
+    markApplied(id: string, cvId: string | null): boolean
     changeStatus(id: string, to: Status, closedReason?: ClosedReason): Result<Application, TransitionError | 'unknown_application'>
   }
 }
@@ -294,7 +294,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         const before = stateRef.current
         commit({ type: 'addApplied', application: result.value })
         // The CV was not found: nothing changed.
-        if (stateRef.current === before) return { ok: false, error: ['cv_required'] }
+        if (stateRef.current === before) return { ok: false, error: ['unknown_cv'] }
         return result
       },
 

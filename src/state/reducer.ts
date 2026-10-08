@@ -30,7 +30,7 @@ export type Action =
   | { type: 'deleteApplication'; id: string }
   | { type: 'addCv'; id: string; name: string; file?: CvFile; now?: IsoDate }
   | { type: 'linkCv'; applicationId: string; cvId: string | null }
-  | { type: 'markApplied'; id: string; cvId: string; now: IsoDate }
+  | { type: 'markApplied'; id: string; cvId: string | null; now: IsoDate }
   | { type: 'reset' }
 
 /**

@@ -289,11 +289,11 @@ function validateApplications(
       errors.push(error('closed_reason_mismatch', `${path}.closedReason`, { status: validStatus }))
     }
 
-    // A CV is needed once the application has been sent; before that it may be missing.
+    // A CV is optional, also once the application has been sent.
     const rawCvId = item['cvId']
     let cvId: string | undefined
     if (rawCvId === undefined) {
-      if (item['appliedAt'] !== undefined) errors.push(error('missing_field', `${path}.cvId`))
+      // No CV.
     } else if (typeof rawCvId !== 'string') {
       errors.push(wrongType(`${path}.cvId`, 'string', rawCvId))
     } else if (!cvIds.has(rawCvId)) {

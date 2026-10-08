@@ -46,6 +46,12 @@ describe('markApplied', () => {
     expect(r).toEqual({ ok: true, value: expect.objectContaining({ status: 'applied', cvId: 'cv2', appliedAt: T1 }) })
   })
 
+  it('applies with no CV, and removes a CV the application had', () => {
+    const r = markApplied(make({ cvId: 'cv1' }), null, T1)
+    expect(r.ok && r.value).toEqual(expect.objectContaining({ status: 'applied', appliedAt: T1 }))
+    expect(r.ok && 'cvId' in r.value).toBe(false)
+  })
+
   it('does not mutate the input', () => {
     const app = make()
     markApplied(app, 'cv2', T1)
@@ -289,11 +295,13 @@ describe('newAppliedApplication', () => {
     })
   })
 
-  it('needs a CV', () => {
+  it('does not need a CV: empty or missing means no cvId', () => {
+    const expected = { id: 'a1', company: 'A', role: '', url: '', status: 'applied', createdAt: T0, appliedAt: T0 }
     expect(newAppliedApplication({ id: 'a1', company: 'A', role: '', url: '', cvId: '' }, T0)).toEqual({
-      ok: false,
-      error: ['cv_required'],
+      ok: true,
+      value: expected,
     })
+    expect(newAppliedApplication({ id: 'a1', company: 'A', role: '', url: '' }, T0)).toEqual({ ok: true, value: expected })
   })
 
   it('checks the fields first', () => {
@@ -377,9 +385,12 @@ describe('changeStatus and the CV', () => {
     return rest
   }
 
-  it('needs a CV for to_apply -> interview when there is none', () => {
-    expect(changeStatus(noCv(), 'interview', T1)).toEqual({ ok: false, error: 'cv_required' })
-    expect(changeStatus(noCv(), 'interview', T1, undefined, '')).toEqual({ ok: false, error: 'cv_required' })
+  it('does not need a CV for to_apply -> interview', () => {
+    for (const given of [undefined, '']) {
+      const r = changeStatus(noCv(), 'interview', T1, undefined, given)
+      expect(r.ok && r.value).toEqual(expect.objectContaining({ status: 'interview', appliedAt: T1 }))
+      expect(r.ok && 'cvId' in r.value).toBe(false)
+    }
   })
 
   it('sets the CV when one is supplied for to_apply -> interview', () => {
@@ -387,8 +398,8 @@ describe('changeStatus and the CV', () => {
     expect(r.ok && r.value).toEqual(expect.objectContaining({ status: 'interview', cvId: 'cv7', appliedAt: T1 }))
   })
 
-  it('needs a CV for to_apply -> applied when there is none', () => {
-    expect(changeStatus(noCv(), 'applied', T1)).toEqual({ ok: false, error: 'cv_required' })
+  it('allows to_apply -> applied with or without a CV', () => {
+    expect(changeStatus(noCv(), 'applied', T1).ok).toBe(true)
     expect(changeStatus(noCv(), 'applied', T1, undefined, 'cv7').ok).toBe(true)
   })
 
@@ -412,13 +423,15 @@ describe('changeStatus and the CV', () => {
     expect(r.ok && r.value.cvId).toBe('cv1')
   })
 
-  it('asks for a CV when reopening an applied application that has none', () => {
+  it('reopens an applied application that has no CV', () => {
     const closed = noCv({ status: 'closed', closedReason: 'withdrawn', appliedAt: T0 })
-    expect(changeStatus(closed, 'applied', T1)).toEqual({ ok: false, error: 'cv_required' })
+    const r = changeStatus(closed, 'applied', T1)
+    expect(r.ok && r.value.status).toBe('applied')
+    expect(r.ok && 'cvId' in r.value).toBe(false)
     expect(changeStatus(closed, 'applied', T1, undefined, 'cv1').ok).toBe(true)
   })
 
-  it('does not mutate the input when it fails', () => {
+  it('does not mutate the input', () => {
     const app = noCv()
     changeStatus(app, 'interview', T1)
     expect(app).toEqual(noCv())

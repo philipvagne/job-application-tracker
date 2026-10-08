@@ -1,11 +1,20 @@
 import type { Application, Cv, IsoDate } from './types'
 
 export interface CvStats {
-  cvId: string
+  /** null for the group of applications sent without a CV; its name is then empty. */
+  cvId: string | null
   name: string
   applied: number
   replied: number
   interviews: number
+}
+
+function countApplied(applications: readonly Application[]): Omit<CvStats, 'cvId' | 'name'> {
+  return {
+    applied: applications.length,
+    replied: applications.filter((a) => a.repliedAt !== undefined).length,
+    interviews: applications.filter((a) => a.interviewAt !== undefined).length,
+  }
 }
 
 /**
@@ -13,22 +22,22 @@ export interface CvStats {
  * - applied: applications with an appliedAt date
  * - replied: applied applications with a repliedAt date
  * - interviews: applied applications that have an interviewAt date
- * Applications that point to an unknown CV are not counted.
+ * Applied applications without a CV are their own group, last, with cvId null; it is only
+ * there when it has at least one application. Applications that point to an unknown CV are
+ * not counted.
  */
 export function replyStatsByCv(
   applications: readonly Application[],
   cvs: readonly Cv[],
 ): CvStats[] {
-  return cvs.map((cv) => {
-    const mine = applications.filter((a) => a.cvId === cv.id && a.appliedAt !== undefined)
-    return {
-      cvId: cv.id,
-      name: cv.name,
-      applied: mine.length,
-      replied: mine.filter((a) => a.repliedAt !== undefined).length,
-      interviews: mine.filter((a) => a.interviewAt !== undefined).length,
-    }
-  })
+  const stats: CvStats[] = cvs.map((cv) => ({
+    cvId: cv.id,
+    name: cv.name,
+    ...countApplied(applications.filter((a) => a.cvId === cv.id && a.appliedAt !== undefined)),
+  }))
+  const withoutCv = applications.filter((a) => a.cvId === undefined && a.appliedAt !== undefined)
+  if (withoutCv.length > 0) stats.push({ cvId: null, name: '', ...countApplied(withoutCv) })
+  return stats
 }
 
 /**

@@ -29,7 +29,7 @@ export interface Application {
   url: string
   status: Status
   closedReason?: ClosedReason
-  /** The CV used. Present whenever appliedAt is; may be missing before the first application. */
+  /** The CV used. Optional: an application can be sent without choosing a CV. */
   cvId?: string
   createdAt: IsoDate
   appliedAt?: IsoDate

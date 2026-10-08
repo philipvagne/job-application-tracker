@@ -117,8 +117,8 @@
   },
   "paste": {
     "summary": "+ Lägg till flera länkar på en gång",
-    "label": "En länk eller jobbtitel per rad",
-    "hint": "Högst 200 rader. Tomma rader hoppas över. Allt hamnar i Att söka.",
+    "label": "En länk per rad",
+    "hint": "Högst 200 rader. Tomma rader ignoreras. Rader som inte är länkar hoppas över. Allt hamnar i Att söka.",
     "add": "Lägg till alla",
     "empty": "Klistra in minst en rad först.",
     "result": "Tillagda: {added}. Redan i listan: {duplicates}. Överhoppade rader: {skipped}."
@@ -127,10 +127,6 @@
     "addOption": "Lägg till ett CV",
     "nameLabel": "CV-namn",
     "save": "Spara CV",
-    "saveAndApply": "Spara och markera som sökt",
-    "firstPrompt": "Vilket CV använder du? Ge det ett namn. Nästa gång väljer du det i en lista.",
-    "required": "Välj vilket CV du skickade med.",
-    "requiredNone": "Lägg till ett CV först, så vet du senare vad du skickade.",
     "nameRequired": "Ange ett namn på CV:t.",
     "nameTaken": "Du har redan ett CV med det namnet."
   },

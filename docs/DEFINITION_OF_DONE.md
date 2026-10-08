@@ -7,22 +7,22 @@ A free browser app that makes applying for jobs faster, and keeps a reliable rec
 ## Design rules
 
 1. **It must save time, not cost it.** Adding a job takes under 10 seconds from a link or the bookmarklet. If a feature adds typing, it is cut.
-2. **Every application is a record.** It holds the link, the exact CV file that was sent, notes and dates, so the user can stand by what they sent.
+2. **Every application is a record.** It holds the link, the exact CV file that was sent (if the user chose one), notes and dates, so the user can stand by what they sent. Choosing a CV is optional: "No CV" is always a valid choice.
 3. **No accounts, no server, no API keys.** Data never leaves the browser.
 4. **Respect the user.** Neutral wording, no red "rejected" counters, counts of what the user did this week (shown only when the user turns on "Show weekly summary" in settings; off by default). Nothing nags: the user decides what happens next.
 
 ## Version 1: what is in
 
-1. **Link-first quick add.** Paste a link, choose a CV from a dropdown, then "Save to To apply" or "Save as already applied" (the second needs a CV). A link or a company name is enough; company, role and a note are optional extras behind a button. Without a company the list shows the website name from the link (nothing is fetched). A link already in the list gives a gentle warning with "Add anyway".
+1. **Link-first quick add.** Paste a link, choose a CV from a dropdown, then "Save to To apply" or "Save as already applied" (the CV is optional for both; "No CV" is a valid choice). A link or a company name is enough; company, role and a note are optional extras behind a button. Without a company the list shows the website name from the link (nothing is fetched). A link already in the list gives a gentle warning with "Add anyway".
 2. **Bookmarklet.** One click on a job page sends the link and page title, plus the job title and company when the page publishes them as structured data. No server, no AI.
-3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used is linked to the application and opens from its row.
+3. **CV files.** Upload PDF files, stored in the browser. Each upload is its own entry and never changes; a revised CV is uploaded again. The CV used, if any, is linked to the application and opens from its row.
 4. **Application record.** Link (opens from the row), CV file, notes, and dates.
 5. **Lists and statuses.** Status tabs: To apply, Applied, Interview, Offer and Closed (reason: no reply, not selected, declined offer; older entries keep their old reason). One list is shown at a time, with the count on each tab. The layout was decided from an approved mockup (docs/mockups/): tabs, with a "My CVs" column.
 6. **Reminders that compute themselves, and are optional.** "No reply after N days" can be switched on or off in settings, and N is a setting.
 7. **Message templates.** A cover message with {company} and {role} filled in automatically and a copy button.
-8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead. A reply is recorded automatically when an application moves to Interview or Offer; there is no manual "got a reply" action.
+8. **Statistics per CV.** Replies and interviews per CV file or CV name, with the counts shown and a note that small numbers mislead. Applications sent without a CV are counted as their own group. A reply is recorded automatically when an application moves to Interview or Offer; there is no manual "got a reply" action.
 9. **Backup.** Export and import as JSON including the CV files, plus CSV export. The app asks the browser to keep its storage, and reminds the user when a backup is overdue. Built in two steps: first the application data and CV names and file details, **without the files themselves** (the app says so plainly), then a "full backup" pass that adds the files.
-10. **CV deletion.** A CV entry and its file can be deleted, with a confirmation that names the applications using it. Must be done before release.
+10. **CV deletion.** A CV entry and its file can be deleted, with a confirmation that names the applications using it. When a CV is deleted, the applications that used it lose their link to it (they keep their other data and count as "no CV"), and the user sees how many are affected before confirming. Must be done before release.
 11. **Swedish and English** interface, desktop-first, keyboard accessible. It must work on a phone but is not optimised for one.
 
 ## Later (after version 1)

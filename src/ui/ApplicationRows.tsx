@@ -26,10 +26,9 @@ function RowTitle({ application }: { application: Application }) {
   )
 }
 
-/** "Added 8 Oct", only for a row whose title comes from the link, as one more way to tell rows apart. */
+/** "Added 8 Oct", shown on every row in the To apply tab only. */
 function AddedOn({ application }: { application: Application }) {
   const { t, language } = useApp()
-  if (application.company.trim() !== '') return null
   const added = new Date(application.createdAt)
   if (Number.isNaN(added.getTime())) return null
   const date = new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short' }).format(added)
@@ -144,18 +143,15 @@ interface ToApplyRowProps extends CvProps, NoteProps {
 
 export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onShowNote }: ToApplyRowProps) {
   const { t } = useApp()
-  const hasMeta = application.url !== '' || application.cvId !== undefined
   return (
     <li className="row">
       <div className="row__main">
         <RowTitle application={application} />
-        {hasMeta && (
-          <p className="row__meta">
-            {application.url !== '' && <HostLink url={application.url} />}
-            <CvName application={application} cvs={cvs} />
-            <AddedOn application={application} />
-          </p>
-        )}
+        <p className="row__meta">
+          {application.url !== '' && <HostLink url={application.url} />}
+          <CvName application={application} cvs={cvs} />
+          <AddedOn application={application} />
+        </p>
         <NotePreview application={application} onShowNote={onShowNote} />
       </div>
       <div className="row__actions">
@@ -204,7 +200,6 @@ export function AppliedRow({ application, cvs, now, reminderDays, onMenu, onOpen
           </span>
           {application.url !== '' && <HostLink url={application.url} />}
           <CvName application={application} cvs={cvs} />
-          <AddedOn application={application} />
         </p>
         <NotePreview application={application} onShowNote={onShowNote} />
       </div>
@@ -238,7 +233,6 @@ export function ClosedRow({ application, cvs, onReopen, onMenu, onOpenCv, onShow
         <p className="row__meta">
           {reason !== null && <span>{t('row.closedWithReason', { reason })}</span>}
           <CvName application={application} cvs={cvs} />
-          <AddedOn application={application} />
         </p>
         <NotePreview application={application} onShowNote={onShowNote} />
       </div>
