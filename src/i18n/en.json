@@ -368,5 +368,22 @@
     "showAll": "Show full",
     "showFull": "Show full note",
     "title": "Note: {company}"
+  },
+  "list": {
+    "searchLabel": "Search this list",
+    "searchPlaceholder": "Search company, role, notes or link",
+    "clear": "Clear search",
+    "noMatches": "No matches",
+    "noMatchesClear": "Clear the search",
+    "resultsOne": "{count} match",
+    "resultsOther": "{count} matches",
+    "sortLabel": "Sort by",
+    "sort": {
+      "added_desc": "Newest added first",
+      "added_asc": "Oldest added first",
+      "applied_desc": "Latest applied first",
+      "applied_asc": "Oldest applied first",
+      "company": "Company A–Z"
+    }
   }
 }

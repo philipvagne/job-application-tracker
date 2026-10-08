@@ -368,5 +368,22 @@
     "showAll": "Visa hela",
     "showFull": "Visa hela anteckningen",
     "title": "Anteckning: {company}"
+  },
+  "list": {
+    "searchLabel": "Sök i listan",
+    "searchPlaceholder": "Sök företag, roll, anteckning eller länk",
+    "clear": "Rensa sökningen",
+    "noMatches": "Inga träffar",
+    "noMatchesClear": "Rensa sökningen",
+    "resultsOne": "{count} träff",
+    "resultsOther": "{count} träffar",
+    "sortLabel": "Sortera",
+    "sort": {
+      "added_desc": "Nyast tillagd först",
+      "added_asc": "Äldst tillagd först",
+      "applied_desc": "Senast sökt först",
+      "applied_asc": "Äldst sökt först",
+      "company": "Företag A–Ö"
+    }
   }
 }

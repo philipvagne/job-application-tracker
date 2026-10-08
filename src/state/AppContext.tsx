@@ -37,6 +37,7 @@ import {
   type ReadCvError,
   type SaveErrorCode,
   type StateStore,
+  type UiPreferences,
   type UploadErrorCode,
 } from '../storage'
 import { downloadTextFile } from '../ui/download'
@@ -58,6 +59,8 @@ export interface AppContextValue {
    * bit of local screen state (typed text, an open form, a message) starts over, like a first visit.
    */
   dataResetCount: number
+  /** View choices such as the list sort. Not user data: never exported. */
+  preferences: UiPreferences
   /** False when this browser cannot store CV files (no IndexedDB), so uploads are off. */
   filesAvailable: boolean
   /** Whether a CV's file is stored here. Only meaningful for CVs that have file details. */
@@ -126,6 +129,8 @@ interface AppProviderProps {
   store: StateStore
   /** Where CV files are kept. */
   files: CvFileStore
+  /** Small view choices, such as the list sort. */
+  preferences: UiPreferences
   /** Loaded once, before the first render (not in an effect, so StrictMode cannot load twice). */
   initial: Loaded
   children: ReactNode
@@ -133,7 +138,7 @@ interface AppProviderProps {
 
 const nowIso = (): string => new Date().toISOString()
 
-export function AppProvider({ store, files, initial, children }: AppProviderProps) {
+export function AppProvider({ store, files, preferences, initial, children }: AppProviderProps) {
   const [state, setState] = useState(initial.data)
   // The ids of the CV files stored in this browser, or null when that could not be read.
   const [storedIds, setStoredIds] = useState<ReadonlySet<string> | null>(null)
@@ -254,6 +259,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         // Keeps the chosen language across a reload and reports whether saving works again.
         persist(empty)
         setReminderDismissed(false)
+        preferences.clear()
         setDataResetCount((count) => count + 1)
         return true
       },
@@ -415,7 +421,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         return result
       },
     }),
-    [commit, persist, showState, showStatus, store, files, refreshStoredFiles],
+    [commit, persist, showState, showStatus, store, files, preferences, refreshStoredFiles],
   )
 
   const fileStatus = useCallback((cv: Cv): CvFileStatus => cvFileStatus(cv, storedIds), [storedIds])
@@ -423,8 +429,8 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
   const backupDue = !reminderDismissed && isBackupDue(state, nowIso())
 
   const value = useMemo<AppContextValue>(
-    () => ({ state, language, dict, t, status, saveError, backupDue, dataResetCount, filesAvailable, fileStatus, actions }),
-    [state, language, dict, t, status, saveError, backupDue, dataResetCount, filesAvailable, fileStatus, actions],
+    () => ({ state, language, dict, t, status, saveError, backupDue, dataResetCount, preferences, filesAvailable, fileStatus, actions }),
+    [state, language, dict, t, status, saveError, backupDue, dataResetCount, preferences, filesAvailable, fileStatus, actions],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

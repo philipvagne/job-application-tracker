@@ -1063,3 +1063,83 @@
     flex: 1 1 auto;
   }
 }
+
+/* Search and sort for the rows of a tab. The wrapper keeps its height when the controls are hidden. */
+.list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.list-controls__search {
+  position: relative;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.list-controls__input {
+  padding-inline-end: var(--target-size);
+}
+
+.list-controls__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.list-controls__clear {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .list-controls__clear:hover {
+    color: var(--ink);
+  }
+}
+
+.list-controls__sort {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.list-controls__sort .input {
+  width: auto;
+  max-width: 100%;
+}
+
+.list-controls__count {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.list-controls__count:empty {
+  display: none;
+}
+
+.list-empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.list-empty .hint {
+  margin: 0;
+}

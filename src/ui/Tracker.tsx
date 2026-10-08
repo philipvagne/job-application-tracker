@@ -9,13 +9,19 @@ import {
   applicationsWithStatus,
   countsByStatus,
   defaultTab,
+  effectiveSort,
+  filterAndSortApplications,
+  neighbourApplications,
   reopenTarget,
+  shouldShowListControls,
+  sortOptionsFor,
   tabAfterDataChange,
   suggestCvName,
   type Application,
   type ClosedReason,
   type Cv,
   type CvError,
+  type SortKey,
   type Status,
 } from '../domain'
 import { useApp } from '../state/AppContext'
@@ -25,6 +31,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { CV_ADD_BUTTON_ID, CvPanel } from './CvPanel'
 import { EditDialog } from './EditDialog'
 import { NoteDialog } from './NoteDialog'
+import { LIST_SEARCH_ID, ListControls } from './ListControls'
 import { LINK_FIELD_ID, QuickAdd } from './QuickAdd'
 import type { MenuAction } from './RowMenu'
 import { SideNote } from './SideNote'
@@ -47,7 +54,7 @@ type Confirm = { kind: 'close' | 'delete'; application: Application } | null
 
 /** Quick add, the CV choice, the status tabs, the CV column and every dialog they open. */
 export function Tracker() {
-  const { t, language, state, filesAvailable, actions } = useApp()
+  const { t, language, state, preferences, filesAvailable, actions } = useApp()
   const { applications, cvs, settings } = state
 
   const cvSelectId = useId()
@@ -89,10 +96,16 @@ export function Tracker() {
   const resetTab = tabAfterDataChange(tab, applications)
   if (resetTab !== tab) setTab(resetTab)
 
+  // The search text lives here, so it stays when the tab changes. The sort the user chose is
+  // remembered as a preference (not user data); a tab it does not fit uses its own default.
+  const [query, setQuery] = useState('')
+  const [savedSort, setSavedSort] = useState<SortKey | null>(() => preferences.getSort())
+
   const now = new Date().toISOString()
 
   const counts = countsByStatus(applications)
-  const shown = applicationsWithStatus(applications, tab)
+  const sort = effectiveSort(tab, savedSort)
+  const shown = filterAndSortApplications(applicationsWithStatus(applications, tab), { query, sort, language })
   const firstVisit = applications.length === 0 && cvs.length === 0
   const deletingCvCount = deletingCv === null ? 0 : applicationsUsingCv(applications, deletingCv.id)
   const weekCount = applicationsThisWeek(applications, now)
@@ -124,6 +137,12 @@ export function Tracker() {
     return () => window.clearTimeout(timer)
   }, [message])
 
+  /** Empties the search. Focus goes to the search field, or to the tab if the controls hide now. */
+  function clearQuery(): void {
+    setQuery('')
+    setFocusIds([LIST_SEARCH_ID, tabId(tab)])
+  }
+
   /** The button in a row that focus can return to. */
   function focusIdOf(a: Application): string {
     return a.status === 'to_apply' ? `apply-${a.id}` : a.status === 'closed' ? `reopen-${a.id}` : `more-${a.id}`
@@ -134,9 +153,9 @@ export function Tracker() {
    * itself, else the link field. Call it with the application as it was before the change.
    */
   function neighbourIds(application: Application): string[] {
-    const list = applicationsWithStatus(applications, application.status)
-    const i = list.findIndex((a) => a.id === application.id)
-    const ids = [list[i + 1], list[i - 1]].filter((a): a is Application => a !== undefined).map(focusIdOf)
+    // The rows as the user sees them (searched and sorted), so focus lands on a row that is on screen.
+    const list = application.status === tab ? shown : applicationsWithStatus(applications, application.status)
+    const ids = neighbourApplications(list, application.id).map(focusIdOf)
     return [...ids, tabId(application.status), LINK_FIELD_ID]
   }
 
@@ -423,8 +442,14 @@ export function Tracker() {
         heading={firstVisit ? t('welcome.addTitle') : t('quickAdd.title')}
         cvField={cvFieldNode}
         cvId={cvId}
-        onSaved={(application) => setTab(application.status)}
-        onPasted={() => setTab('to_apply')}
+        onSaved={(application) => {
+          setQuery('')
+          setTab(application.status)
+        }}
+        onPasted={() => {
+          setQuery('')
+          setTab('to_apply')
+        }}
         onAnnounce={setMessage}
       />
 
@@ -435,8 +460,33 @@ export function Tracker() {
           <div>
             {settings.showWeekSummary === true && <p className="week">{weekText}</p>}
             <StatusTabs selected={tab} onSelect={setTab} counts={counts}>
-              {shown.length === 0 ? (
+              {shouldShowListControls(counts[tab], query) && (
+                <ListControls
+                  query={query}
+                  onQueryChange={setQuery}
+                  onClear={clearQuery}
+                  sort={sort}
+                  sortOptions={sortOptionsFor(tab)}
+                  onSortChange={(next) => {
+                    setSavedSort(next)
+                    preferences.setSort(next)
+                  }}
+                  resultCount={shown.length}
+                />
+              )}
+              {counts[tab] === 0 ? (
                 <p className="hint">{t(EMPTY_KEY[tab])}</p>
+              ) : shown.length === 0 ? (
+                <div className="list-empty">
+                  <p className="hint">{t('list.noMatches')}</p>
+                  <button
+                    type="button"
+                    className="btn btn--small"
+                    onClick={clearQuery}
+                  >
+                    {t('list.noMatchesClear')}
+                  </button>
+                </div>
               ) : (
                 <ul className="rows">{shown.map(renderRow)}</ul>
               )}
