@@ -2,6 +2,8 @@
 
 Working title. A free browser app for tracking job applications: paste a link, choose the CV you sent, and keep a reliable record of what you sent and said to each employer. There are no accounts and no server. Everything stays on your own device.
 
+Live: https://job-application-tracker.philipv-agne.workers.dev. The address is public, but the site asks search engines not to list it (`X-Robots-Tag: noindex`).
+
 ## Privacy
 
 The app makes no network requests at all: no analytics, no tracking, no fonts or scripts from other sites. Your applications are stored in the browser (localStorage), and your CV files in the browser's IndexedDB. "Delete all my data" in the settings removes everything, including the files. Links you save are only shown as text, and opened in a new tab when you click them.
