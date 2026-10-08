@@ -20,7 +20,7 @@ export interface Loaded {
 }
 
 export interface LoadOptions {
-  navigatorLanguage: string | undefined
+  navigatorLanguages: readonly string[] | undefined
   /** The language on screen now, kept when a reload finds nothing saved. */
   currentLanguage?: Language
 }
@@ -34,7 +34,7 @@ export function loadApp(store: StateStore, options: LoadOptions): Loaded {
   const result = store.loadState()
   const useDetected = !hadSavedState || result.recovered
   const language = useDetected
-    ? (options.currentLanguage ?? detectLanguage(options.navigatorLanguage))
+    ? (options.currentLanguage ?? detectLanguage(options.navigatorLanguages))
     : result.state.settings.language
   return {
     data: useDetected ? { ...result.state, settings: { ...result.state.settings, language } } : result.state,

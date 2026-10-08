@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from 'react'
 import { applicationTitle, type Application, type ApplicationFieldError } from '../domain'
 import { useApp } from '../state/AppContext'
 import { Dialog } from './Dialog'
+import { useDialogDirty } from './dialogGuard'
 
 interface EditDialogProps {
   /** The application being edited, or null when the dialog is closed. */
@@ -14,7 +15,7 @@ interface EditDialogProps {
 export function EditDialog({ application, onClose, onSaved }: EditDialogProps) {
   const titleId = useId()
   return (
-    <Dialog open={application !== null} onClose={onClose} titleId={titleId}>
+    <Dialog open={application !== null} onClose={onClose} titleId={titleId} closeOnBackdrop>
       {application !== null && (
         <EditForm key={application.id} application={application} titleId={titleId} onClose={onClose} onSaved={onSaved} />
       )}
@@ -46,6 +47,15 @@ function EditForm({ application, titleId, onClose, onSaved }: EditFormProps) {
   const [notes, setNotes] = useState(application.notes ?? '')
   const [cvId, setCvId] = useState(application.cvId ?? '')
   const [errors, setErrors] = useState<ApplicationFieldError[]>([])
+
+  // Nothing is lost by closing while every field still has the value it had when the dialog opened.
+  const dirty =
+    company !== application.company ||
+    role !== application.role ||
+    link !== application.url ||
+    notes !== (application.notes ?? '') ||
+    cvId !== (application.cvId ?? '')
+  useDialogDirty(dirty)
 
   const companyInvalid = errors.includes('company_or_link_required')
   const linkInvalid = errors.includes('invalid_url')

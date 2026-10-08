@@ -143,7 +143,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} titleId={titleId} className="dialog--fixed-footer">
+      <Dialog open={open} onClose={handleClose} titleId={titleId} className="dialog--fixed-footer" closeOnBackdrop dirty={draft !== null}>
         <h2 id={titleId} className="dialog__title">
           {t('settings.title')}
         </h2>

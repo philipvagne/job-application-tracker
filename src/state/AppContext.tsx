@@ -23,7 +23,7 @@ import {
   type Status,
   type TransitionError,
 } from '../domain'
-import { dictionaries, t as translate, type Dict, type Params, type TextKey } from '../i18n'
+import { browserLanguages, dictionaries, t as translate, type Dict, type Params, type TextKey } from '../i18n'
 import {
   CORRUPT_BACKUP_KEY,
   STATE_KEY,
@@ -206,7 +206,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
       if (event.key !== null && event.key !== STATE_KEY && event.key !== CORRUPT_BACKUP_KEY) return
       if (!statusRef.current.persistent) return
       const loaded = loadApp(store, {
-        navigatorLanguage: navigator.language,
+        navigatorLanguages: browserLanguages(navigator),
         currentLanguage: stateRef.current.settings.language,
       })
       showState(loaded.data)
@@ -278,7 +278,7 @@ export function AppProvider({ store, files, initial, children }: AppProviderProp
         // Newer unreadable data was being protected. Loading again keeps a copy of it, and
         // the session's changes stay on screen until the user decides about that copy too.
         const loaded = loadApp(store, {
-          navigatorLanguage: navigator.language,
+          navigatorLanguages: browserLanguages(navigator),
           currentLanguage: stateRef.current.settings.language,
         })
         if (!loaded.status.recovered) showState(loaded.data)

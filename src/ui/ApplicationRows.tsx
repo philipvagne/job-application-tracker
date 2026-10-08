@@ -181,7 +181,7 @@ export function ToApplyRow({ application, cvs, onApplied, onMenu, onOpenCv, onSh
         <button
           type="button"
           id={`apply-${application.id}`}
-          className="btn btn--primary"
+          className="btn btn--primary btn--compact"
           aria-label={t('row.actionFor', { action: t('row.markApplied'), company: accessibleTitle(application) })}
           onClick={onApplied}
         >

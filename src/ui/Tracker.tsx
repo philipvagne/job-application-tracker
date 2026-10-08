@@ -481,6 +481,7 @@ export function Tracker() {
         }
         confirmLabel={t('confirmCv.button')}
         danger
+        busy={deleteCvBusy}
         onConfirm={() => void confirmDeleteCv()}
         onCancel={closeDeleteCv}
       >

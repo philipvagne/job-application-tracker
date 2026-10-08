@@ -1,17 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, detectLanguage } from './language'
+import { browserLanguages, detectLanguage, formatDate } from './language'
 
 describe('detectLanguage', () => {
   it.each(['sv', 'sv-SE', 'sv-FI', 'SV', 'sv_SE', ' sv-SE '])('picks Swedish for %j', (value) => {
-    expect(detectLanguage(value)).toBe('sv')
+    expect(detectLanguage([value])).toBe('sv')
   })
 
-  it.each(['en', 'en-US', 'de-DE', 'nb-NO', 'fi', '', 'xsv'])('picks English for %j', (value) => {
-    expect(detectLanguage(value)).toBe('en')
+  it.each(['en', 'en-US', 'de-DE', 'de', 'nb-NO', 'fi', 'xsv', 'xx'])('picks English for %j', (value) => {
+    expect(detectLanguage([value])).toBe('en')
   })
 
-  it('picks English when there is no value', () => {
+  it('picks English for an empty list, no list, or empty values', () => {
+    expect(detectLanguage([])).toBe('en')
     expect(detectLanguage(undefined)).toBe('en')
+    expect(detectLanguage([''])).toBe('en')
+  })
+
+  it('only looks at the first usable entry', () => {
+    expect(detectLanguage(['sv-SE', 'en-US'])).toBe('sv')
+    expect(detectLanguage(['en-US', 'sv'])).toBe('en')
+    expect(detectLanguage(['xx', 'sv'])).toBe('en')
+    expect(detectLanguage(['', '  ', 'sv'])).toBe('sv')
+  })
+})
+
+describe('browserLanguages', () => {
+  it('prefers the list, then the single language, then nothing', () => {
+    expect(browserLanguages({ languages: ['sv-SE', 'en'], language: 'en' })).toEqual(['sv-SE', 'en'])
+    expect(browserLanguages({ languages: [], language: 'sv' })).toEqual(['sv'])
+    expect(browserLanguages({ language: 'de' })).toEqual(['de'])
+    expect(browserLanguages({})).toEqual([])
   })
 })
 

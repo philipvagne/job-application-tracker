@@ -18,7 +18,7 @@ export function NoteDialog({ application, onClose }: NoteDialogProps) {
   const { t } = useApp()
   const titleId = useId()
   return (
-    <Dialog open={application !== null} onClose={onClose} titleId={titleId} className="dialog--fixed-footer">
+    <Dialog open={application !== null} onClose={onClose} titleId={titleId} className="dialog--fixed-footer" closeOnBackdrop>
       {application !== null && (
         <>
           <h2 id={titleId} className="dialog__title">

@@ -36,7 +36,7 @@ interface RowMenuProps {
 }
 
 /**
- * A "More" disclosure built on <details>: Enter or Space on the summary opens it, Tab walks
+ * A "More options" disclosure (a three-dots button) built on <details>: Enter or Space on the summary opens it, Tab walks
  * through the buttons, Escape closes it and returns to the summary.
  */
 export function RowMenu({ application, onAction }: RowMenuProps) {
@@ -83,10 +83,14 @@ export function RowMenu({ application, onAction }: RowMenuProps) {
       <summary
         ref={summaryRef}
         id={`more-${application.id}`}
-        className="btn btn--small"
+        className="menu__toggle"
         aria-label={t('row.actionFor', { action: t('row.more'), company })}
       >
-        {t('row.more')}
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <circle cx="10" cy="4" r="1.75" fill="currentColor" />
+          <circle cx="10" cy="10" r="1.75" fill="currentColor" />
+          <circle cx="10" cy="16" r="1.75" fill="currentColor" />
+        </svg>
       </summary>
       <ul className="menu__list">
         {menuActionsFor(application).map((action) => (

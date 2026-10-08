@@ -139,6 +139,13 @@
   font-size: var(--text-sm);
 }
 
+/* The main action of a row: still easy to hit (36px), but lighter than a full-size button. */
+.btn--compact {
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
 /* A button that looks like a link: for actions that open something. */
 .btn--quiet {
   min-height: 2.25rem;
@@ -751,6 +758,45 @@
 
 .menu > summary {
   list-style: none;
+}
+
+/* The three-dots button: a quiet 44px round target, no border or fill. */
+.menu__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-size);
+  height: var(--target-size);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* Hover: only the dots darken. Open: darker dots on a faint 32px circle (the hit area stays 44px). */
+.menu__toggle {
+  position: relative;
+}
+
+.menu__toggle svg {
+  position: relative;
+}
+
+.menu[open] > .menu__toggle::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgb(30 32 50 / 0.06);
+}
+
+.menu[open] > .menu__toggle {
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .menu__toggle:hover {
+    color: var(--ink);
+  }
 }
 
 .menu > summary::-webkit-details-marker {

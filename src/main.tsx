@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
+import { browserLanguages } from './i18n'
 import { AppProvider } from './state/AppContext'
 import { loadApp } from './state/load'
 import { createBrowserFileStore, createBrowserStorage, createStateStore } from './storage'
@@ -15,7 +16,7 @@ if (!root) throw new Error('Root element not found')
 // Loaded once here, outside React, so StrictMode's double render cannot load twice.
 const store = createStateStore(createBrowserStorage())
 const files = createBrowserFileStore()
-const initial = loadApp(store, { navigatorLanguage: navigator.language })
+const initial = loadApp(store, { navigatorLanguages: browserLanguages(navigator) })
 
 createRoot(root).render(
   <StrictMode>

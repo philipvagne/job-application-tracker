@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   confirmLabel: string
   /** Gives the confirm button the danger style, for actions that destroy data. */
   danger?: boolean
+  /** Something is running (an export or a delete): a click on the backdrop does not cancel. */
+  busy?: boolean
   /** Extra content under the text, such as a field for a choice. */
   children?: ReactNode
   onConfirm: () => void
@@ -22,6 +24,7 @@ export function ConfirmDialog({
   body,
   confirmLabel,
   danger = false,
+  busy = false,
   children,
   onConfirm,
   onCancel,
@@ -35,7 +38,7 @@ export function ConfirmDialog({
   }, [open])
 
   return (
-    <Dialog open={open} onClose={onCancel} titleId={titleId}>
+    <Dialog open={open} onClose={onCancel} titleId={titleId} closeOnBackdrop busy={busy}>
       <h2 id={titleId} className="dialog__title">
         {title}
       </h2>
